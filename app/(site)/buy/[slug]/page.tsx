@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Lock } from "lucide-react";
-import { getListing, listings, money, statusLabel } from "@/content/listings";
+import { getListing, listings, statusLabel } from "@/content/listings";
 
 type P = { params: Promise<{ slug: string }> };
 export const generateStaticParams = () => listings.map((l) => ({ slug: l.slug }));
@@ -32,7 +32,7 @@ export default async function ListingPage({ params }: P) {
           <h2 className="mt-3 text-2xl font-semibold">{pending ? "Sale pending" : "Request the CIM"}</h2>
           <p className="mt-2 text-[15px] text-muted-foreground">{pending ? "This business is under contract. Ask an advisor about similar opportunities." : "Sign the NDA and confirm your buyer profile to request the Confidential Information Memorandum."}</p>
           {l.idealBuyer === "strategic" && !pending && <p className="mt-3 text-sm">Best suited to a strategic acquirer.</p>}
-          {!pending && l.floorUsd && <p className="mt-3 text-sm text-muted-foreground">Suggested proof of funds: <span className="num text-foreground">{money(l.floorUsd)}</span>. Financing plans are welcome.</p>}
+          {!pending && <p className="mt-3 text-sm text-muted-foreground">Financing plans are welcome.</p>}
           <Link href={pending ? "/contact" : `/buy/${l.slug}/request`} className="btn btn-primary mt-5 w-full">{pending ? "Talk to an advisor" : "Sign NDA and request CIM"}</Link>
         </aside>
       </section>

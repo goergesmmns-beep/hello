@@ -4,6 +4,7 @@ import { nda } from "@/content/nda";
 import { signedNdaPdf } from "./pdf";
 import { addNote, syncBuyer } from "./pipedrive";
 import { notifyAdvisors, sendMail, siteUrl } from "./mail";
+import { ruleFor } from "./rules";
 import { buyerByEmail, buyerById, buyerByToken, saveBuyer, saveFile } from "./store";
 import type { Buyer, Route, Stage } from "./types";
 
@@ -60,7 +61,7 @@ export async function signNda(token: string, s: { signedName: string; ip: string
   b.nda = { signedName: s.signedName, signedAt: at, ip: s.ip, userAgent: s.userAgent, version: nda.version, fileId };
   b.stage = "capacity";
   log(b, "nda", `NDA signed by ${s.signedName}`);
-  if (listing.gate === "after_nda") { await openCim(b, "Listing rule: CIM opens after NDA"); return b; }
+  if ((await ruleFor(listing)).gate === "after_nda") { await openCim(b, "Listing rule: CIM opens after NDA"); return b; }
   await commit(b, `NDA signed by ${s.signedName} on ${at}`);
   return b;
 }
@@ -113,6 +114,29 @@ export async function requestCall(token: string, note?: string) {
   const listing = getListing(b.listingSlug)!;
   await safely(() => notifyAdvisors(`Call requested: ${b.name}, ${listing.title}`, `${note ?? ""}\n\n${siteUrl()}/admin/buyers/${b.id}`), b);
   await commit(b, "Buyer asked for a call");
+  return b;
+}
+export async function resendLink(id: string) {
+  const b = await buyerById(id);
+  if (!b) throw new Error("Buyer not found");
+  const listing = getListing(b.listingSlug)!;
+  await sendMail(b.email, `Your link for ${listing.title}`, `Here is your private link:\n\n${buyerLink(b)}\n\nWestbound Road`);
+  log(b, "link", "Advisor resent the private link"); await saveBuyer(b);
+  return b;
+}
+export async function addAdvisorNote(id: string, text: string) {
+  const b = await buyerById(id);
+  if (!b) throw new Error("Buyer not found");
+  const at = new Date().toISOString();
+  b.notes = [{ at, text }, ...(b.notes ?? [])];
+  log(b, "note", "Advisor added a note");
+  await commit(b, `Advisor note: ${text}`);
+  return b;
+}
+export async function setArchived(id: string, archived: boolean) {
+  const b = await buyerById(id);
+  if (!b) throw new Error("Buyer not found");
+  b.archived = archived; log(b, "archive", archived ? "Buyer archived" : "Buyer restored"); await saveBuyer(b);
   return b;
 }
 export async function recordCimView(b: Buyer) {

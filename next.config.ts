@@ -39,7 +39,7 @@ const moved: Record<string, string> = {
 
 const config: NextConfig = {
   poweredByHeader: false,
-  outputFileTracingIncludes: { "/api/cim/**": ["./private/cims/**"] },
+  outputFileTracingIncludes: { "/api/cim/**": ["./private/cims/**"], "/admin/integrations": ["./private/cims/**"] },
   async redirects() {
     return Object.entries(moved).map(([source, destination]) => ({ source, destination, permanent: true }));
   },

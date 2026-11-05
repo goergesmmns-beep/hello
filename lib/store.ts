@@ -77,9 +77,9 @@ export async function allBuyers() {
   return r.map((x) => x.data as Buyer);
 }
 export async function saveSubmission(s: Submission) {
-  if (useLocal()) { const d = await readLocal(); d.submissions.unshift(s); return writeLocal(d); }
+  if (useLocal()) { const d = await readLocal(); d.submissions = [s, ...d.submissions.filter((x) => x.id !== s.id)].sort((a, b) => b.createdAt.localeCompare(a.createdAt)); return writeLocal(d); }
   const sql = await db();
-  await sql`insert into submissions (id, data) values (${s.id}, ${sql.json(s as never)})`;
+  await sql`insert into submissions (id, data) values (${s.id}, ${sql.json(s as never)}) on conflict (id) do update set data = excluded.data`;
 }
 export async function allSubmissions() {
   if (useLocal()) return (await readLocal()).submissions;
