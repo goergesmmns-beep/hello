@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Shared theme, with pure black and white grounds and one light orange brand token. */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.1450 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.1450 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1450 0 0);
+  --primary: oklch(0.2050 0 0);
+  --primary-foreground: oklch(0.9850 0 0);
+  --secondary: oklch(0.9700 0 0);
+  --secondary-foreground: oklch(0.2050 0 0);
+  --muted: oklch(0.9700 0 0);
+  --muted-foreground: oklch(0.4500 0 0);
+  --accent: oklch(0.9700 0 0);
+  --accent-foreground: oklch(0.2050 0 0);
+  --destructive: oklch(0.5770 0.2450 27.3250);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9220 0 0);
+  --input: oklch(0.9220 0 0);
+  --ring: oklch(0.7080 0 0);
+  --brand: oklch(0.8100 0.1250 68);
+  --brand-foreground: oklch(0.1450 0 0);
+  --brand-ink: oklch(0.5400 0.1400 55);
+  --radius: 0.625rem;
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+}
+
+.dark {
+  --background: oklch(0 0 0);
+  --foreground: oklch(0.9850 0 0);
+  --card: oklch(0.1650 0 0);
+  --card-foreground: oklch(0.9850 0 0);
+  --popover: oklch(0.2690 0 0);
+  --popover-foreground: oklch(0.9850 0 0);
+  --primary: oklch(0.9850 0 0);
+  --primary-foreground: oklch(0.1450 0 0);
+  --secondary: oklch(0.2690 0 0);
+  --secondary-foreground: oklch(0.9850 0 0);
+  --muted: oklch(0.2050 0 0);
+  --muted-foreground: oklch(0.7400 0 0);
+  --accent: oklch(0.3710 0 0);
+  --accent-foreground: oklch(0.9850 0 0);
+  --destructive: oklch(0.7040 0.1910 22.2160);
+  --destructive-foreground: oklch(0.9850 0 0);
+  --border: oklch(0.2750 0 0);
+  --input: oklch(0.3250 0 0);
+  --ring: oklch(0.5560 0 0);
+  --brand: oklch(0.8100 0.1250 68);
+  --brand-foreground: oklch(0.1450 0 0);
+  --brand-ink: oklch(0.8100 0.1250 68);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-ink: var(--brand-ink);
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  h1, h2, h3 { text-wrap: balance; letter-spacing: -0.035em; }
+  ::selection { background: var(--brand); color: var(--brand-foreground); }
+  :focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+}
+
+@layer components {
+  .wrap { width: 100%; max-width: 1240px; margin-inline: auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+  .eyebrow { font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); }
+  .num { font-family: var(--font-geist-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .display { font-size: clamp(2.75rem, 8.4vw, 7.25rem); line-height: .96; font-weight: 600; letter-spacing: -0.05em; }
+  .h2 { font-size: clamp(2rem, 4.6vw, 3.75rem); line-height: 1.02; font-weight: 600; }
+  .lede { font-size: clamp(1.0625rem, 1.6vw, 1.3125rem); line-height: 1.5; color: var(--muted-foreground); max-width: 62ch; }
+  .prose-w p { line-height: 1.7; max-width: 66ch; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 46px; padding: 0 1.25rem; border-radius: var(--radius-md); font-weight: 600; font-size: 15px; transition: transform .15s ease, background-color .15s ease, color .15s ease, border-color .15s ease; cursor: pointer; border: 1px solid transparent; }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+  .btn-primary:hover { background: var(--brand); color: var(--brand-foreground); }
+  .btn-brand { background: var(--brand); color: var(--brand-foreground); }
+  .btn-brand:hover { background: var(--primary); color: var(--primary-foreground); }
+  .btn-ghost { border-color: var(--border); color: var(--foreground); background: transparent; }
+  .btn-ghost:hover { border-color: var(--foreground); }
+  .field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; min-width: 0; }
+  .input { width: 100%; min-height: 46px; border: 1px solid var(--input); border-radius: var(--radius-md); background: var(--background); color: var(--foreground); padding: 10px 12px; font-size: 16px; font-weight: 400; }
+  .input:focus { outline: 2px solid var(--brand-ink); outline-offset: 0; border-color: transparent; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 500; }
+  .pill-brand { background: var(--brand); border-color: var(--brand); color: var(--brand-foreground); }
+}
+
+/* Signature: lane markings that run westbound along the road in the hero. */
+
+.road-dash { stroke-dasharray: 34 30; animation: west 2.4s linear infinite; }
+@keyframes west { to { stroke-dashoffset: 64; } }
+.rise { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes rise { from { transform: translateY(14px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .road-dash, .rise { animation: none; }
+  html { scroll-behavior: auto; }
+}
