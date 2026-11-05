@@ -30,7 +30,7 @@ export function Header() {
 export function Footer() {
   const cols: [string, [string, string][]][] = [
     ["Buyers", [["/buy", "Current listings"], ["/acquisitions-alliance", "Acquisitions Alliance"], ["/insights", "Insights"]]],
-    ["Sellers", [["/sell", "Sell your business"], ["/valuation", "What's my business worth?"], ["/success", "Client results"]]],
+    ["Sellers", [["/sell", "Sell your business"], ["/grow", "Grow through acquisition"], ["/valuation", "What's my business worth?"], ["/success", "Client results"]]],
     ["Firm", [["/about", "About"], ["/team", "Team"], ["/media", "Media"], ["/referrals", "Referral program"], ["/contact", "Contact"], ["/privacy", "Privacy"]]],
   ];
   return (

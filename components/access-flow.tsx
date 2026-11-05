@@ -7,12 +7,12 @@ import { money } from "@/content/listings";
 type Pub = { name: string; email: string; linkedin?: string; website?: string; why?: string; route?: string; stage: string; ndaSigned: boolean; ndaSignedAt?: string };
 type L = { title: string; askLabel: string; floor: number | null; idealBuyer: string; gate: string };
 const routes = [
-  ["own", "Individual, own funds", "I can show liquid funds"],
-  ["company", "Company, strategic purchase", "We would add this to our business"],
-  ["letter", "Bank or lender letter", "I am outside the U.S., or have a letter ready"],
-  ["financing", "Using financing", "I would like to talk through a funding plan"],
+  ["own", "Individual buyer, own capital", "I can show proof of funds"],
+  ["company", "Strategic acquirer", "We would add this to our existing business"],
+  ["letter", "Bank or lender letter", "I have a letter ready, or I am outside the U.S."],
+  ["financing", "Using acquisition financing", "SBA, seller financing or outside investors"],
 ] as const;
-const steps = ["About you", "NDA", "Your plan", "CIM"];
+const steps = ["Profile", "NDA", "Funding", "CIM"];
 
 export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, localLink }: { token: string; code?: string; buyer: Pub; listing: L; clauses: string[][]; ndaDraft: boolean; localLink?: string }) {
   const [b, setB] = useState(buyer);
@@ -64,7 +64,7 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
           <label className="field" htmlFor="plan">Funding plan<select id="plan" name="plan" className="input" required defaultValue=""><option value="" disabled>Choose one</option><option>SBA loan</option><option>Seller financing</option><option>Outside investors</option><option>Not sure yet</option></select></label>
           <label className="field" htmlFor="notes">Anything else?<textarea id="notes" name="notes" className="input" rows={3} /></label></>
         : <><h1 className="text-3xl font-semibold">{b.route === "letter" ? "Add your letter" : "Show funds for this deal"}</h1>
-          {listing.floor && <p className="text-muted-foreground">Typical funds to show: <span className="num text-foreground">{money(listing.floor)}</span>.</p>}
+          {listing.floor && <p className="text-muted-foreground">Suggested proof of funds: <span className="num text-foreground">{money(listing.floor)}</span>.</p>}
           <p className="text-muted-foreground">Upload a bank or lender letter, or a recent statement. Only advisors can open it, it never goes to the CRM, and it is deleted after 30 days.</p>
           <label className="field" htmlFor="file">PDF, PNG or JPG, under 4 MB<input id="file" name="file" type="file" required accept=".pdf,.png,.jpg,.jpeg" className="input" /></label></>}
         {Err}<button className="btn btn-primary w-full" disabled={busy}>Send to an advisor</button>
@@ -75,7 +75,7 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
       {(b.stage === "cim" || b.stage === "call") && <div className="space-y-4"><h1 className="text-3xl font-semibold">{code ? "Your CIM is open." : "Your CIM is ready."}</h1>
         {code ? <><a href={`/api/cim/${token}?v=${code}`} target="_blank" rel="noreferrer" className="btn btn-primary w-full"><FileText size={18} /> Open CIM</a><p className="text-sm text-muted-foreground">Your email appears on every page.</p>
           {b.stage === "cim" ? <button className="btn btn-ghost w-full" disabled={busy} onClick={() => send(JSON.stringify({ action: "call" }))}>Request a call with an advisor</button> : <Done>An advisor will contact you about a call</Done>}</>
-        : <><p className="flex gap-2 text-muted-foreground"><Lock size={18} className="mt-1 shrink-0" />We sent a private link to {b.email}. Open it to confirm your email and view the CIM.</p>{localLink && <Link className="btn btn-ghost w-full" href={localLink} id="local-link">Local test only: open the emailed link</Link>}</>}
+        : <><p className="flex gap-2 text-muted-foreground"><Lock size={18} className="mt-1 shrink-0" />We sent a private link to {b.email}. Open it to confirm your email and view the CIM.</p>{localLink && <Link className="btn btn-ghost w-full" href={localLink} id="local-link">Test mode: open the emailed link</Link>}</>}
       </div>}
 
       {b.stage === "warm" && <div className="space-y-4"><h1 className="text-3xl font-semibold">Your next step is the funding plan.</h1><Done>NDA signed. You stay on this listing's buyer list.</Done>

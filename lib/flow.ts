@@ -45,7 +45,7 @@ export async function saveProfile(token: string, p: { name: string; linkedin?: s
   const b = await need(token);
   Object.assign(b, p);
   log(b, "profile", `Profile saved. Route: ${p.route}`);
-  await commit(b);
+  await commit(b, `Buyer route: ${p.route}. LinkedIn: ${p.linkedin || "not given"}. Website: ${p.website || "not given"}. Why: ${p.why}`);
   return b;
 }
 export async function signNda(token: string, s: { signedName: string; ip: string; userAgent: string }) {

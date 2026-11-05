@@ -3,13 +3,13 @@ export const company = {
   address: ["1623 Central Avenue, Suite 18", "Cheyenne, WY 82001"],
 };
 export const nav = [
-  { href: "/buy", label: "Buy" }, { href: "/sell", label: "Sell" }, { href: "/valuation", label: "Valuation" },
+  { href: "/buy", label: "Buy" }, { href: "/sell", label: "Sell" }, { href: "/grow", label: "Grow" }, { href: "/valuation", label: "Valuation" },
   { href: "/team", label: "Team" }, { href: "/success", label: "Results" }, { href: "/insights", label: "Insights" },
 ];
 export const stats = [
   { value: "78.6%", label: "of the businesses we list get sold" },
   { value: "230+", label: "acquisition funding strategies" },
-  { value: "3M+", label: "potential buyers reached by our marketing" },
+  { value: "5", label: "offers on an average deal" },
   { value: "60%", label: "of our deals cross international borders" },
 ];
 export const differences = [
@@ -44,3 +44,14 @@ export const media = [
   ["Smarter Ways to Invest in Social Media and Your Business", "Podcast", "https://growing-social-now-with-barbara-rozgonyi.simplecast.com/episodes/marty-fahnke-social-media-investor-DVkXtl2a"],
 ] as const;
 export const legalNote = "This site is for informational purposes only. It does not contain any investment recommendations whatsoever. Reliance on any statements, materials, information, data or resources made available in connection with this site is solely at your own risk. The information on this site is not intended as an offer or solicitation to buy or sell securities.";
+
+/** Public sold listings from westboundroad.com. Generic descriptions only, as shown there. */
+export const soldDeals = [
+  ["Marketing automation SaaS", "SaaS"], ["Powersports aftermarket manufacturer", "Manufacturing"], ["eCommerce health subscription", "Subscription"],
+  ["Digital performance marketing agency", "Agency"], ["Senior facility management SaaS", "SaaS"], ["25-year-old design firm", "Services"],
+  ["Automated social media content platform", "SaaS"], ["Customer engagement SaaS", "SaaS"], ["10-year-old reusable drinkware brand", "Consumer brand"],
+  ["AI sales personalization SaaS", "SaaS"], ["Portfolio of 19 software and AI products", "Portfolio"], ["Remote developer recruiting platform", "Marketplace"],
+  ["Clean beauty eCommerce and Amazon brand", "eCommerce"], ["Tutoring center software", "SaaS"], ["Sustainable travel gear brand", "DTC"],
+  ["Remodeling and design-build business", "Services"], ["Children's language book publisher", "DTC"], ["Starter business platform", "Marketplace"],
+  ["Premium gaming computer shop", "eCommerce"], ["Men's grooming Amazon FBA brand", "eCommerce"], ["Fast-growing AI media platform", "Publishing"],
+] as const;

@@ -29,11 +29,11 @@ export default async function ListingPage({ params }: P) {
         </div>
         <aside className="h-fit rounded-lg border p-6 md:sticky md:top-24">
           <Lock size={20} className="text-brand-ink" />
-          <h2 className="mt-3 text-2xl font-semibold">{pending ? "Sale pending" : "Get the full CIM"}</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">{pending ? "This business is under contract. Ask an advisor about similar opportunities." : "Sign the NDA on your phone and tell us how you plan to buy. It takes a few minutes."}</p>
+          <h2 className="mt-3 text-2xl font-semibold">{pending ? "Sale pending" : "Request the CIM"}</h2>
+          <p className="mt-2 text-[15px] text-muted-foreground">{pending ? "This business is under contract. Ask an advisor about similar opportunities." : "Sign the NDA and confirm your buyer profile to request the Confidential Information Memorandum."}</p>
           {l.idealBuyer === "strategic" && !pending && <p className="mt-3 text-sm">Best suited to a strategic acquirer.</p>}
-          {!pending && l.floorUsd && <p className="mt-3 text-sm text-muted-foreground">Typical funds to show: <span className="num text-foreground">{money(l.floorUsd)}</span>. Financing plans are welcome.</p>}
-          <Link href={pending ? "/contact" : `/buy/${l.slug}/request`} className="btn btn-primary mt-5 w-full">{pending ? "Talk to an advisor" : "Sign NDA to learn more"}</Link>
+          {!pending && l.floorUsd && <p className="mt-3 text-sm text-muted-foreground">Suggested proof of funds: <span className="num text-foreground">{money(l.floorUsd)}</span>. Financing plans are welcome.</p>}
+          <Link href={pending ? "/contact" : `/buy/${l.slug}/request`} className="btn btn-primary mt-5 w-full">{pending ? "Talk to an advisor" : "Sign NDA and request CIM"}</Link>
         </aside>
       </section>
     </>

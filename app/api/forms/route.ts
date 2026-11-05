@@ -5,7 +5,7 @@ import { notifyAdvisors } from "@/lib/mail";
 import { syncSubmission } from "@/lib/pipedrive";
 import { saveSubmission } from "@/lib/store";
 
-const schema = z.object({ kind: z.enum(["Contact", "Seller inquiry", "Valuation request"]), fields: z.record(z.string(), z.string().max(5000)) });
+const schema = z.object({ kind: z.enum(["Contact", "Seller inquiry", "Valuation request", "Newsletter"]), fields: z.record(z.string(), z.string().max(5000)) });
 export async function POST(req: Request) {
   const p = schema.safeParse(await req.json().catch(() => null));
   if (!p.success || !z.email().safeParse(p.data.fields.email).success) return NextResponse.json({ error: "Check the form." }, { status: 400 });

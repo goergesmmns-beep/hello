@@ -21,7 +21,8 @@ Without a database or email key, local data goes to `.data/` and emails go to `.
 - `private/cims/<listing-slug>.pdf`: add each real CIM. Keep the repo private. Each file is stamped with the buyer's email when opened.
 - `content/listings.ts`: confirm prices, `gate` and `floorUsd` for each listing.
 - `lib/parse-lead.ts`: test against a real BizBuySell lead email.
-- Pipedrive: create the pipeline stages and custom fields, then set PIPEDRIVE_STAGE_IDS and PIPEDRIVE_FIELD_KEYS.
+- Pipedrive: sign in at `/admin/integrations`, paste the account API token and create the Buyer Access pipeline.
+- Remove TEST_MODE before the real domain goes live.
 
 ## Marketplace leads
 Forward BizBuySell lead emails with Zapier, Make or an inbound-email service to `POST /api/inbound/lead`, with header `x-inbound-secret` and JSON `{ "subject": "...", "text": "..." }`.

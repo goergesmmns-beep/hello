@@ -4,7 +4,7 @@ import postgres from "postgres";
 import type { Buyer, StoredFile, Submission } from "./types";
 
 /** Postgres on Vercel (DATABASE_URL). A local JSON file for development only. */
-type Local = { buyers: Buyer[]; submissions: Submission[]; files: (Omit<StoredFile, "bytes"> & { b64: string })[] };
+type Local = { settings?: Record<string, unknown>; buyers: Buyer[]; submissions: Submission[]; files: (Omit<StoredFile, "bytes"> & { b64: string })[] };
 const localPath = path.join(process.cwd(), ".data", "store.json");
 
 async function readLocal(): Promise<Local> {
@@ -24,11 +24,19 @@ let client: ReturnType<typeof postgres> | null = null;
 let ready: Promise<unknown> | null = null;
 async function db() {
   client ??= postgres(process.env.DATABASE_URL!, { max: 3, prepare: false });
-  ready ??= client.unsafe(`
+  const c = client;
+  ready ??= (async () => {
+    // Several requests can start together on a cold deploy, so one takes a lock while the tables are made.
+    await c.begin(async (tx) => {
+      await tx.unsafe("select pg_advisory_xact_lock(727401)");
+      await tx.unsafe(`
     create table if not exists buyers (id text primary key, token text unique not null, email text not null, listing text not null, data jsonb not null, updated_at timestamptz not null default now());
     create table if not exists submissions (id text primary key, data jsonb not null);
+    create table if not exists settings (key text primary key, value jsonb not null);
     create table if not exists files (id text primary key, buyer_id text not null, kind text not null, name text not null, mime text not null, bytes bytea not null, created_at timestamptz not null default now());
   `);
+    });
+  })().catch((e) => { ready = null; throw e; });
   await ready;
   return client;
 }
@@ -110,4 +118,17 @@ export async function purgeCapacityFiles(days: number) {
   const sql = await db();
   const r = await sql`delete from files where kind = 'capacity' and created_at < ${new Date(cutoff)}`;
   return r.count;
+}
+
+export async function getSetting<T>(key: string): Promise<T | null> {
+  if (useLocal()) return ((await readLocal()).settings?.[key] as T) ?? null;
+  const sql = await db();
+  const r = await sql`select value from settings where key = ${key}`;
+  return (r[0]?.value as T) ?? null;
+}
+export async function setSetting(key: string, value: unknown | null) {
+  if (useLocal()) { const d = await readLocal(); d.settings ??= {}; if (value === null) delete d.settings[key]; else d.settings[key] = value; return writeLocal(d); }
+  const sql = await db();
+  if (value === null) { await sql`delete from settings where key = ${key}`; return; }
+  await sql`insert into settings (key, value) values (${key}, ${sql.json(value as never)}) on conflict (key) do update set value = excluded.value`;
 }

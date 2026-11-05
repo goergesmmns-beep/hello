@@ -15,7 +15,7 @@ export default async function Access({ params, searchParams }: { params: Promise
   if (!b) notFound();
   const l = getListing(b.listingSlug)!;
   const verified = v === b.verifyCode;
-  const local = !process.env.RESEND_API_KEY && !process.env.VERCEL;
+  const local = process.env.TEST_MODE === "true" || (!process.env.RESEND_API_KEY && !process.env.VERCEL);
   return (
     <div className="min-h-dvh">
       <header className="border-b"><div className="wrap flex h-14 items-center"><Wordmark /></div></header>

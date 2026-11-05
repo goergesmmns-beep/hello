@@ -121,11 +121,65 @@
 
 /* Signature: lane markings that run westbound along the road in the hero. */
 
-.road-dash { stroke-dasharray: 34 30; animation: west 2.4s linear infinite; }
-@keyframes west { to { stroke-dashoffset: 64; } }
 .rise { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes rise { from { transform: translateY(14px); } to { transform: none; } }
+.tape { display: flex; gap: 10px; width: max-content; animation: tape 70s linear infinite; }
+.tape.rev { animation-direction: reverse; }
+.tape-wrap:hover .tape { animation-play-state: paused; }
+@keyframes tape { to { transform: translateX(-50%); } }
+.fade-in { animation: fade .35s ease both; }
+@keyframes fade { from { transform: translateY(6px); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .road-dash, .rise { animation: none; }
+  .tape { animation: none; flex-wrap: wrap; width: auto; }
+  .fade-in { animation: none; }
   html { scroll-behavior: auto; }
+}
+
+/* ---- Premium motion layer. Everything stays readable if animation is off. ---- */
+@property --spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.gborder { position: relative; isolation: isolate; border: 0 !important; background: transparent; }
+.gborder::before { content: ""; position: absolute; inset: 0; z-index: -2; border-radius: inherit; padding: 1px;
+  background: conic-gradient(from var(--spin), rgba(255,255,255,.1) 0deg, var(--brand) 70deg, #fff 110deg, rgba(255,255,255,.1) 170deg, rgba(255,255,255,.1) 360deg);
+  animation: borderspin 7s linear infinite; }
+.gborder::after { content: ""; position: absolute; inset: 1px; z-index: -1; border-radius: inherit; background: var(--card); }
+@keyframes borderspin { to { --spin: 360deg; } }
+
+.aurora { position: absolute; inset: -20%; pointer-events: none; filter: blur(70px); opacity: .55; }
+.aurora i { position: absolute; display: block; border-radius: 50%; }
+.aurora i:nth-child(1) { width: 46%; height: 46%; right: 4%; top: 12%; background: radial-gradient(circle, color-mix(in oklch, var(--brand) 62%, transparent), transparent 68%); animation: drift1 16s ease-in-out infinite alternate; }
+.aurora i:nth-child(2) { width: 34%; height: 34%; right: 34%; top: 46%; background: radial-gradient(circle, rgba(255,255,255,.16), transparent 70%); animation: drift2 21s ease-in-out infinite alternate; }
+@keyframes drift1 { to { transform: translate(-16%, 18%) scale(1.15); } }
+@keyframes drift2 { to { transform: translate(22%, -16%) scale(.9); } }
+
+.mesh { position: relative; overflow: hidden; isolation: isolate; }
+.mesh::before { content: ""; position: absolute; inset: -60%; z-index: -1; background: radial-gradient(30% 30% at 30% 30%, color-mix(in oklch, var(--brand) 42%, transparent), transparent 70%), radial-gradient(26% 26% at 72% 68%, color-mix(in oklch, var(--foreground) 12%, transparent), transparent 70%); animation: meshmove 14s linear infinite; opacity: .75; }
+@keyframes meshmove { to { transform: rotate(360deg); } }
+
+.spot { position: relative; overflow: hidden; }
+.spot::before { content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity .3s; pointer-events: none; background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--brand) 26%, transparent), transparent 70%); }
+.spot:hover::before { opacity: 1; }
+
+.flow { background: linear-gradient(110deg, var(--brand), #fff 30%, var(--brand) 55%, oklch(0.72 0.15 55) 80%, var(--brand)); background-size: 260% 100%; animation: flow 11s linear infinite; }
+@keyframes flow { to { background-position: -260% 0; } }
+.flow-text { color: transparent; -webkit-background-clip: text; background-clip: text; }
+
+.sweep { position: relative; }
+.sweep::after { content: ""; position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--brand), var(--foreground)); transition: transform .45s cubic-bezier(.2,.7,.2,1); }
+.sweep:hover::after, .sweep:focus-visible::after { transform: scaleX(1); }
+
+.iso-scene { perspective: 1400px; }
+.iso-stack { transform-style: preserve-3d; transform: rotateX(56deg) rotateZ(-42deg); }
+.plate { position: absolute; inset: 0; border-radius: 14px; border: 1px solid var(--border); background: color-mix(in oklch, var(--card) 88%, transparent); transition: transform .7s cubic-bezier(.2,.8,.2,1), background .4s, border-color .4s, box-shadow .4s; }
+.plate.on { background: linear-gradient(135deg, var(--brand), oklch(0.72 0.15 55)); border-color: var(--brand); box-shadow: 0 0 60px color-mix(in oklch, var(--brand) 55%, transparent); }
+
+@supports (animation-timeline: view()) {
+  .reveal { animation: reveal linear both; animation-timeline: view(); animation-range: entry 0% entry 42%; }
+  @keyframes reveal { from { opacity: .05; transform: translateY(36px); } to { opacity: 1; transform: none; } }
+}
+.word-in { display: inline-block; animation: wordin .9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes wordin { from { transform: translateY(.34em) rotateX(-30deg); opacity: .15; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gborder::before, .aurora i, .mesh::before, .flow, .word-in, .reveal { animation: none !important; }
+  .plate { transition: none; }
 }
