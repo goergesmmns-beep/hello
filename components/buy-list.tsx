@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { ListingRow } from "./ui";
-import { listings } from "@/content/listings";
+import type { Listing } from "@/content/listings";
 
 const opts = [["all", "All"], ["over", "Over $1M"], ["under", "Under $1M"]] as const;
-export function BuyList() {
+export function BuyList({ listings }: { listings: Listing[] }) {
   const [f, setF] = useState<(typeof opts)[number][0]>("all");
   const rows = listings.filter((l) => f === "all" || l.band === f);
   return (

@@ -55,6 +55,7 @@ const config: NextConfig = {
       { source: "/:path*", headers: base },
       { source: "/access/:path*", headers: privateArea },
       { source: "/admin/:path*", headers: privateArea },
+      { source: "/unsubscribe/:path*", headers: privateArea },
     ];
   },
 };

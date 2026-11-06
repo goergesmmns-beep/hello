@@ -4,7 +4,7 @@ import { AlertCircle } from "lucide-react";
 import { Decide } from "@/components/desk/actions";
 import { Breakdown, DailyBars, Funnel } from "@/components/desk/charts";
 import { Card, Empty, PageTitle } from "@/components/desk/shell";
-import { getListing } from "@/content/listings";
+import { catalog } from "@/lib/catalog";
 import { isAdmin } from "@/lib/admin";
 import { ago, analyze, hoursSince } from "@/lib/analytics";
 import { allBuyers, allSubmissions } from "@/lib/store";
@@ -16,8 +16,8 @@ function Kpi({ label, value, note, hot }: { label: string; value: string | numbe
 const time = (h: number | null) => (h === null ? "No data" : h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${h.toFixed(1)} hrs` : `${(h / 24).toFixed(1)} days`);
 export default async function Overview() {
   if (!(await isAdmin())) redirect("/admin/login");
-  const [all, subs] = await Promise.all([allBuyers(), allSubmissions()]);
-  const a = analyze(all, subs); const k = a.kpis;
+  const [all, subs, cat] = await Promise.all([allBuyers(), allSubmissions(), catalog()]);
+  const a = analyze(all, subs, cat); const k = a.kpis;
   const events = a.buyers.flatMap((b) => b.events.filter((e) => !["crm_error", "mail_error"].includes(e.type)).map((e) => ({ ...e, id: b.id, name: b.name }))).sort((x, y) => y.at.localeCompare(x.at)).slice(0, 8);
   const issues = all.filter((b) => b.events.some((e) => e.type === "crm_error" || e.type === "mail_error")).length;
   return (<>
@@ -33,7 +33,7 @@ export default async function Overview() {
     </div>
     <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <Card title="Needs your decision" sub="Oldest first" action={<Link href="/admin/pipeline" className="text-sm text-muted-foreground hover:text-foreground">Pipeline</Link>}>
-        {a.review.length ? <ul className="-my-2">{a.review.slice(0, 6).map((b) => <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-3 last:border-0"><div className="min-w-0"><Link href={`/admin/buyers/${b.id}`} className="font-semibold hover:text-brand">{b.name}</Link><p className="truncate text-sm text-muted-foreground">{getListing(b.listingSlug)?.title} · <span className={hoursSince(b.updatedAt) > 24 ? "text-brand" : ""}>{ago(b.updatedAt)} waiting</span></p></div><Decide id={b.id} stage={b.stage} compact /></li>)}</ul> : <Empty title="Nothing to review" text="Buyers who need a decision will appear here." />}
+        {a.review.length ? <ul className="-my-2">{a.review.slice(0, 6).map((b) => <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-3 last:border-0"><div className="min-w-0"><Link href={`/admin/buyers/${b.id}`} className="font-semibold hover:text-brand">{b.name}</Link><p className="truncate text-sm text-muted-foreground">{cat.find((l) => l.slug === b.listingSlug)?.title} · <span className={hoursSince(b.updatedAt) > 24 ? "text-brand" : ""}>{ago(b.updatedAt)} waiting</span></p></div><Decide id={b.id} stage={b.stage} compact /></li>)}</ul> : <Empty title="Nothing to review" text="Buyers who need a decision will appear here." />}
       </Card>
       <Card title="Buyer funnel" sub="Each step counts buyers who passed the one before"><Funnel steps={a.funnel} /></Card>
       <Card title="Inquiries" sub="Last 30 days"><DailyBars data={a.daily} /></Card>

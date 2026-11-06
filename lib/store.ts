@@ -4,7 +4,7 @@ import postgres from "postgres";
 import type { Buyer, StoredFile, Submission } from "./types";
 
 /** Postgres on Vercel (DATABASE_URL). A local JSON file for development only. */
-type Local = { settings?: Record<string, unknown>; buyers: Buyer[]; submissions: Submission[]; files: (Omit<StoredFile, "bytes"> & { b64: string })[] };
+type Local = { settings?: Record<string, unknown>; hits?: Record<string, { start: number; count: number }>; buyers: Buyer[]; submissions: Submission[]; files: (Omit<StoredFile, "bytes"> & { b64: string })[] };
 const localPath = path.join(process.cwd(), ".data", "store.json");
 
 async function readLocal(): Promise<Local> {
@@ -33,6 +33,7 @@ async function db() {
     create table if not exists buyers (id text primary key, token text unique not null, email text not null, listing text not null, data jsonb not null, updated_at timestamptz not null default now());
     create table if not exists submissions (id text primary key, data jsonb not null);
     create table if not exists settings (key text primary key, value jsonb not null);
+    create table if not exists rate_limits (key text primary key, window_start timestamptz not null, count int not null);
     create table if not exists files (id text primary key, buyer_id text not null, kind text not null, name text not null, mime text not null, bytes bytea not null, created_at timestamptz not null default now());
   `);
     });
@@ -88,9 +89,10 @@ export async function allSubmissions() {
   return r.map((x) => x.data as Submission);
 }
 export async function saveFile(f: StoredFile) {
-  if (useLocal()) { const d = await readLocal(); const { bytes, ...rest } = f; d.files.push({ ...rest, b64: Buffer.from(bytes).toString("base64") }); return writeLocal(d); }
+  if (useLocal()) { const d = await readLocal(); const { bytes, ...rest } = f; d.files = d.files.filter((x) => x.id !== f.id); d.files.push({ ...rest, b64: Buffer.from(bytes).toString("base64") }); return writeLocal(d); }
   const sql = await db();
-  await sql`insert into files (id, buyer_id, kind, name, mime, bytes) values (${f.id}, ${f.buyerId}, ${f.kind}, ${f.name}, ${f.mime}, ${Buffer.from(f.bytes)})`;
+  await sql`insert into files (id, buyer_id, kind, name, mime, bytes) values (${f.id}, ${f.buyerId}, ${f.kind}, ${f.name}, ${f.mime}, ${Buffer.from(f.bytes)})
+    on conflict (id) do update set name = excluded.name, mime = excluded.mime, bytes = excluded.bytes, created_at = now()`;
 }
 export async function getFile(id: string): Promise<StoredFile | null> {
   if (useLocal()) {
@@ -131,4 +133,34 @@ export async function setSetting(key: string, value: unknown | null) {
   const sql = await db();
   if (value === null) { await sql`delete from settings where key = ${key}`; return; }
   await sql`insert into settings (key, value) values (${key}, ${sql.json(value as never)}) on conflict (key) do update set value = excluded.value`;
+}
+
+export async function fileIds(prefix: string) {
+  if (useLocal()) return (await readLocal()).files.filter((f) => f.id.startsWith(prefix)).map((f) => f.id);
+  const sql = await db();
+  const r = await sql`select id from files where id like ${prefix + "%"}`;
+  return r.map((x) => x.id as string);
+}
+/** Counts an attempt inside a fixed time window and returns the running total. */
+export async function hit(key: string, seconds: number) {
+  if (useLocal()) {
+    const d = await readLocal(); d.hits ??= {};
+    const now = Date.now(), cur = d.hits[key];
+    const next = cur && now - cur.start < seconds * 1000 ? { start: cur.start, count: cur.count + 1 } : { start: now, count: 1 };
+    d.hits[key] = next; await writeLocal(d);
+    return next.count;
+  }
+  const sql = await db();
+  const cutoff = new Date(Date.now() - seconds * 1000);
+  const r = await sql`insert into rate_limits (key, window_start, count) values (${key}, now(), 1)
+    on conflict (key) do update set
+      count = case when rate_limits.window_start < ${cutoff} then 1 else rate_limits.count + 1 end,
+      window_start = case when rate_limits.window_start < ${cutoff} then now() else rate_limits.window_start end
+    returning count`;
+  return r[0].count as number;
+}
+export async function clearHits(key: string) {
+  if (useLocal()) { const d = await readLocal(); if (d.hits) delete d.hits[key]; return writeLocal(d); }
+  const sql = await db();
+  await sql`delete from rate_limits where key = ${key}`;
 }

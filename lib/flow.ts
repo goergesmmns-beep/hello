@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "crypto";
-import { getListing } from "@/content/listings";
+import { findListing, isOpen } from "./catalog";
 import { nda } from "@/content/nda";
 import { signedNdaPdf } from "./pdf";
 import { addNote, syncBuyer } from "./pipedrive";
@@ -21,8 +21,8 @@ async function safely(fn: () => Promise<unknown>, b: Buyer) {
 }
 
 export async function createInquiry(i: { listingSlug: string; name: string; email: string; phone?: string; company?: string; message?: string; source: string }) {
-  const listing = getListing(i.listingSlug);
-  if (!listing) throw new Error("Unknown listing");
+  const listing = await findListing(i.listingSlug);
+  if (!listing || !isOpen(listing)) throw new Error("This listing is not open for inquiries.");
   const email = i.email.trim().toLowerCase();
   const existing = await buyerByEmail(email, listing.slug);
   if (existing) {
@@ -54,7 +54,7 @@ export async function signNda(token: string, s: { signedName: string; ip: string
   if (b.nda) return b;
   if (!b.why || !b.route) throw new Error("Complete your profile first.");
   const at = new Date().toISOString();
-  const listing = getListing(b.listingSlug)!;
+  const listing = (await findListing(b.listingSlug))!;
   const bytes = await signedNdaPdf({ name: s.signedName, email: b.email, listing: listing.title, at, ip: s.ip, userAgent: s.userAgent });
   const fileId = randomUUID();
   await saveFile({ id: fileId, kind: "nda", buyerId: b.id, name: `NDA-${b.name}.pdf`, mime: "application/pdf", bytes, createdAt: at });
@@ -75,7 +75,7 @@ export async function submitCapacity(token: string, c: { plan?: string; role?: s
     await saveFile({ id: fileId, kind: "capacity", buyerId: b.id, name: c.file.name, mime: c.file.mime, bytes: c.file.bytes, createdAt: at });
   }
   b.capacity = { plan: c.plan, role: c.role, acquisitions: c.acquisitions, competitor: c.competitor, notes: c.notes, fileId, fileName: c.file?.name, submittedAt: at };
-  const listing = getListing(b.listingSlug)!;
+  const listing = (await findListing(b.listingSlug))!;
   if (b.route === "financing" && c.plan === "Not sure yet") {
     b.stage = "warm"; log(b, "warm", "No funding plan yet. Moved to keep warm");
   } else {
@@ -86,7 +86,7 @@ export async function submitCapacity(token: string, c: { plan?: string; role?: s
   return b;
 }
 async function openCim(b: Buyer, why: string) {
-  const listing = getListing(b.listingSlug)!;
+  const listing = (await findListing(b.listingSlug))!;
   b.stage = "cim"; log(b, "cim", why);
   await safely(() => sendMail(b.email, `Your CIM for ${listing.title}`, `Your CIM is ready. This private link is for you only, and your email appears on every page.\n\n${buyerLink(b)}\n\nWestbound Road`), b);
   await commit(b, why);
@@ -101,7 +101,7 @@ export async function keepWarm(id: string, by: string) {
   const b = await buyerById(id);
   if (!b) throw new Error("Buyer not found");
   b.stage = "warm"; log(b, "warm", `Moved to keep warm by ${by}`);
-  const listing = getListing(b.listingSlug)!;
+  const listing = (await findListing(b.listingSlug))!;
   await safely(() => sendMail(b.email, `Next steps on ${listing.title}`, `Thanks for your interest. An advisor would like to help with your plan before the next step. See your options here:\n\n${buyerLink(b)}\n\nWestbound Road`), b);
   await commit(b, `Moved to keep warm by ${by}`);
   return b;
@@ -111,7 +111,7 @@ export async function requestCall(token: string, note?: string) {
   if (b.stage !== "cim" && b.stage !== "warm") throw new Error("This step is not open yet.");
   if (b.stage === "cim") b.stage = "call";
   log(b, "call", "Buyer asked for a call");
-  const listing = getListing(b.listingSlug)!;
+  const listing = (await findListing(b.listingSlug))!;
   await safely(() => notifyAdvisors(`Call requested: ${b.name}, ${listing.title}`, `${note ?? ""}\n\n${siteUrl()}/admin/buyers/${b.id}`), b);
   await commit(b, "Buyer asked for a call");
   return b;
@@ -119,7 +119,7 @@ export async function requestCall(token: string, note?: string) {
 export async function resendLink(id: string) {
   const b = await buyerById(id);
   if (!b) throw new Error("Buyer not found");
-  const listing = getListing(b.listingSlug)!;
+  const listing = (await findListing(b.listingSlug))!;
   await sendMail(b.email, `Your link for ${listing.title}`, `Here is your private link:\n\n${buyerLink(b)}\n\nWestbound Road`);
   log(b, "link", "Advisor resent the private link"); await saveBuyer(b);
   return b;
@@ -137,6 +137,17 @@ export async function setArchived(id: string, archived: boolean) {
   const b = await buyerById(id);
   if (!b) throw new Error("Buyer not found");
   b.archived = archived; log(b, "archive", archived ? "Buyer archived" : "Buyer restored"); await saveBuyer(b);
+  return b;
+}
+export async function setReminders(id: string, on: boolean) {
+  const b = await buyerById(id);
+  if (!b) throw new Error("Buyer not found");
+  b.remindersOff = !on; log(b, "reminders", on ? "Advisor turned reminders on" : "Advisor paused reminders"); await saveBuyer(b);
+  return b;
+}
+export async function stopReminders(token: string) {
+  const b = await need(token);
+  b.remindersOff = true; log(b, "reminders", "Buyer stopped reminders"); await saveBuyer(b);
   return b;
 }
 export async function recordCimView(b: Buyer) {

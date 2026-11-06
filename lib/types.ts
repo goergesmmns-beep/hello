@@ -9,7 +9,7 @@ export type Buyer = {
   nda?: { signedName: string; signedAt: string; ip: string; userAgent: string; version: string; fileId: string };
   capacity?: { fileId?: string; fileName?: string; plan?: string; role?: string; acquisitions?: string; competitor?: string; notes?: string; submittedAt: string };
   pipedrive?: { personId?: number; dealId?: number };
-  cimViews: number; notes?: { at: string; text: string }[]; archived?: boolean; createdAt: string; updatedAt: string; events: BuyerEvent[];
+  cimViews: number; notes?: { at: string; text: string }[]; archived?: boolean; reminders?: Record<string, string>; remindersOff?: boolean; createdAt: string; updatedAt: string; events: BuyerEvent[];
 };
 export type Submission = { id: string; kind: string; fields: Record<string, string>; createdAt: string; handled?: boolean };
-export type StoredFile = { id: string; kind: "nda" | "capacity"; buyerId: string; name: string; mime: string; bytes: Uint8Array; createdAt: string };
+export type StoredFile = { id: string; kind: "nda" | "capacity" | "cim"; buyerId: string; name: string; mime: string; bytes: Uint8Array; createdAt: string };

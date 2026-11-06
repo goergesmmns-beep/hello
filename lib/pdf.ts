@@ -3,6 +3,7 @@ import path from "path";
 import { degrees, PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { nda } from "@/content/nda";
 import type { Listing } from "@/content/listings";
+import { getFile } from "./store";
 
 function wrap(text: string, max: number) {
   const out: string[] = []; let line = "";
@@ -33,8 +34,10 @@ export async function signedNdaPdf(input: { name: string; email: string; listing
 export async function watermarkedCim(listing: Listing, email: string) {
   const file = path.join(process.cwd(), "private", "cims", `${listing.slug}.pdf`);
   let doc: PDFDocument;
-  try { doc = await PDFDocument.load(await fs.readFile(file)); }
-  catch {
+  try {
+    const stored = await getFile(`cim:${listing.slug}`);
+    doc = await PDFDocument.load(stored ? stored.bytes : await fs.readFile(file));
+  } catch {
     doc = await PDFDocument.create();
     const page = doc.addPage([612, 792]);
     const f = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -46,7 +49,7 @@ export async function watermarkedCim(listing: Listing, email: string) {
   for (const p of doc.getPages()) {
     const { width, height } = p.getSize();
     for (let i = 0; i < 4; i++) {
-      p.drawText(stamp, { x: width * 0.08, y: height * (0.12 + i * 0.24), size: 15, font, rotate: degrees(32), color: rgb(0.45, 0.45, 0.45), opacity: 0.22 });
+      p.drawText(stamp, { x: width * 0.08, y: height * (0.12 + i * 0.24), size: 15, font, rotate: degrees(32), color: rgb(0.32, 0.32, 0.32), opacity: 0.34 });
     }
   }
   return doc.save();

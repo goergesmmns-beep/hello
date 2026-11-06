@@ -14,7 +14,7 @@ const routes = [
 ] as const;
 const steps = ["Profile", "NDA", "Funding", "CIM"];
 
-export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, localLink }: { token: string; code?: string; buyer: Pub; listing: L; clauses: string[][]; ndaDraft: boolean; localLink?: string }) {
+export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, localLink, bookingUrl }: { bookingUrl?: string; token: string; code?: string; buyer: Pub; listing: L; clauses: string[][]; ndaDraft: boolean; localLink?: string }) {
   const [b, setB] = useState(buyer);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -74,12 +74,12 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
 
       {(b.stage === "cim" || b.stage === "call") && <div className="space-y-4"><h1 className="text-3xl font-semibold">{code ? "Your CIM is open." : "Your CIM is ready."}</h1>
         {code ? <><a href={`/api/cim/${token}?v=${code}`} target="_blank" rel="noreferrer" className="btn btn-primary w-full"><FileText size={18} /> Open CIM</a><p className="text-sm text-muted-foreground">Your email appears on every page.</p>
-          {b.stage === "cim" ? <button className="btn btn-ghost w-full" disabled={busy} onClick={() => send(JSON.stringify({ action: "call" }))}>Request a call with an advisor</button> : <Done>An advisor will contact you about a call</Done>}</>
+          {b.stage === "cim" ? (bookingUrl ? <a id="book" href={bookingUrl} target="_blank" rel="noreferrer" className="btn btn-ghost w-full" onClick={() => send(JSON.stringify({ action: "call", note: "Opened the booking link" }))}>Book a call with an advisor</a> : <button className="btn btn-ghost w-full" disabled={busy} onClick={() => send(JSON.stringify({ action: "call" }))}>Request a call with an advisor</button>) : <Done>{bookingUrl ? "Your booking link opened in a new tab" : "An advisor will contact you about a call"}</Done>}</>
         : <><p className="flex gap-2 text-muted-foreground"><Lock size={18} className="mt-1 shrink-0" />We sent a private link to {b.email}. Open it to confirm your email and view the CIM.</p>{localLink && <Link className="btn btn-ghost w-full" href={localLink} id="local-link">Test mode: open the emailed link</Link>}</>}
       </div>}
 
       {b.stage === "warm" && <div className="space-y-4"><h1 className="text-3xl font-semibold">Your next step is the funding plan.</h1><Done>NDA signed. You stay on this listing's buyer list.</Done>
-        <button className="btn btn-primary w-full" disabled={busy} onClick={() => send(JSON.stringify({ action: "call", note: "Asked for a strategy session" }))}>Request a strategy session</button>
+        {bookingUrl ? <a className="btn btn-primary w-full" href={bookingUrl} target="_blank" rel="noreferrer" onClick={() => send(JSON.stringify({ action: "call", note: "Opened the booking link" }))}>Book a strategy session</a> : <button className="btn btn-primary w-full" disabled={busy} onClick={() => send(JSON.stringify({ action: "call", note: "Asked for a strategy session" }))}>Request a strategy session</button>}
         <Link className="btn btn-ghost w-full" href="/acquisitions-alliance">Join Acquisitions Alliance</Link><Link className="btn btn-ghost w-full" href="/buy">See other listings</Link></div>}
       {b.ndaSigned && <a className="block text-sm underline" href={`/api/access/${token}/nda`} target="_blank" rel="noreferrer">Download your signed NDA</a>}
     </div>

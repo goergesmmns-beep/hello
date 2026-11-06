@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { IsoCity } from "./iso-city";
 import { CountUp } from "./count-up";
-import { listings } from "@/content/listings";
 import { stats } from "@/content/site";
 
 const views = {
@@ -18,7 +17,7 @@ const views = {
     lede: "Curated acquisition opportunities, professionally prepared for sale. Sign the NDA, review the CIM and work with an advisor through LOI. Need financing? We have 230+ strategies.",
     primary: ["/buy", "See current listings"], secondary: ["/acquisitions-alliance", "Buyer coaching"],
     panelTitle: "Active listings",
-    rows: listings.filter((l) => l.status === "available").slice(0, 3).map((l) => [l.askLabel, l.title]),
+    rows: [] as string[][],
   },
   Grow: {
     lede: "Buy-side advisory for companies pursuing growth through acquisition. Add $1M, $5M or even $20M in profitable revenue with the right target, structure and funding.",
@@ -29,9 +28,9 @@ const views = {
 } as const;
 type K = keyof typeof views;
 
-export function IntentHero() {
+export function IntentHero({ available }: { available: string[][] }) {
   const [k, setK] = useState<K>("Sell");
-  const v = views[k];
+  const v = k === "Buy" ? { ...views.Buy, rows: available } : views[k];
   return (
     <section className="dark relative overflow-hidden bg-background text-foreground">
       <div className="aurora" aria-hidden><i /><i /></div>

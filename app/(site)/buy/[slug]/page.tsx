@@ -2,18 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Lock } from "lucide-react";
-import { getListing, listings, statusLabel } from "@/content/listings";
+import { statusLabel } from "@/content/listings";
+import { findListing, isOpen, publicListings } from "@/lib/catalog";
 
 type P = { params: Promise<{ slug: string }> };
-export const generateStaticParams = () => listings.map((l) => ({ slug: l.slug }));
+export const revalidate = 60;
+export const generateStaticParams = async () => (await publicListings()).map((l) => ({ slug: l.slug }));
 export async function generateMetadata({ params }: P): Promise<Metadata> {
-  const l = getListing((await params).slug);
+  const l = await findListing((await params).slug);
   return l ? { title: l.title, description: l.summary } : {};
 }
 export default async function ListingPage({ params }: P) {
-  const l = getListing((await params).slug);
-  if (!l) notFound();
-  const pending = l.status === "pending";
+  const l = await findListing((await params).slug);
+  if (!l || l.status === "draft") notFound();
+  const pending = !isOpen(l);
   return (
     <>
       <section className="dark bg-background text-foreground"><div className="wrap py-14 md:py-20">
@@ -29,8 +31,8 @@ export default async function ListingPage({ params }: P) {
         </div>
         <aside className="h-fit rounded-lg border p-6 md:sticky md:top-24">
           <Lock size={20} className="text-brand-ink" />
-          <h2 className="mt-3 text-2xl font-semibold">{pending ? "Sale pending" : "Request the CIM"}</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">{pending ? "This business is under contract. Ask an advisor about similar opportunities." : "Sign the NDA and confirm your buyer profile to request the Confidential Information Memorandum."}</p>
+          <h2 className="mt-3 text-2xl font-semibold">{pending ? statusLabel[l.status] : "Request the CIM"}</h2>
+          <p className="mt-2 text-[15px] text-muted-foreground">{pending ? "This business is no longer available. Ask an advisor about similar opportunities." : "Sign the NDA and confirm your buyer profile to request the Confidential Information Memorandum."}</p>
           {l.idealBuyer === "strategic" && !pending && <p className="mt-3 text-sm">Best suited to a strategic acquirer.</p>}
           {!pending && <p className="mt-3 text-sm text-muted-foreground">Financing plans are welcome.</p>}
           <Link href={pending ? "/contact" : `/buy/${l.slug}/request`} className="btn btn-primary mt-5 w-full">{pending ? "Talk to an advisor" : "Sign NDA and request CIM"}</Link>

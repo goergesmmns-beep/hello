@@ -1,4 +1,5 @@
-import { soldDeals } from "@/content/site";
+import { soldDeals as past } from "@/content/site";
+import { soldListings } from "@/lib/catalog";
 
 function Row({ deals, rev }: { deals: readonly (readonly [string, string])[]; rev?: boolean }) {
   return (
@@ -12,7 +13,8 @@ function Row({ deals, rev }: { deals: readonly (readonly [string, string])[]; re
     </div>
   );
 }
-export function SoldWall() {
+export async function SoldWall() {
+  const soldDeals = [...(await soldListings()).map((l) => [l.title, l.category] as const), ...past];
   const half = Math.ceil(soldDeals.length / 2);
   return (
     <section className="overflow-hidden border-y bg-muted py-16 md:py-24">

@@ -1,4 +1,4 @@
-import { listings } from "@/content/listings";
+import type { Listing } from "@/content/listings";
 import type { Buyer, Submission } from "./types";
 
 const DAY = 864e5;
@@ -17,7 +17,7 @@ const count = <T,>(items: T[], key: (t: T) => string | undefined) => {
 };
 export const routeLabels: Record<string, string> = { own: "Own capital", company: "Strategic", letter: "Bank or lender letter", financing: "Financing" };
 
-export function analyze(all: Buyer[], subs: Submission[]) {
+export function analyze(all: Buyer[], subs: Submission[], listings: Listing[]) {
   const buyers = all.filter((b) => !b.archived);
   const now = Date.now();
   const funnel = [

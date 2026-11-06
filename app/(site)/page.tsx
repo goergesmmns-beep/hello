@@ -9,14 +9,17 @@ import { Bento } from "@/components/bento";
 import { JanuaryWindow } from "@/components/countdown";
 import { GrowCompare } from "@/components/grow-compare";
 import { Newsletter } from "@/components/newsletter";
-import { listings } from "@/content/listings";
+import { publicListings } from "@/lib/catalog";
 import { media, testimonials } from "@/content/site";
 
-export default function Home() {
-  const live = listings.filter((l) => l.status !== "pending").slice(0, 5);
+export const revalidate = 60;
+export default async function Home() {
+  const listings = await publicListings();
+  const open = listings.filter((l) => l.status !== "pending");
+  const live = open.slice(0, 5);
   return (
     <>
-      <IntentHero />
+      <IntentHero available={open.filter((l) => l.status === "available").slice(0, 3).map((l) => [l.askLabel, l.title])} />
       <section className="wrap reveal py-20 md:py-28">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow mb-3">Acquisition opportunities</p><h2 className="h2 max-w-3xl">Active listings, professionally prepared for sale.</h2></div><Link href="/buy" className="btn btn-ghost">All {listings.length} listings</Link></div>
         <div className="border-t">{live.map((l) => <ListingRow key={l.slug} l={l} />)}</div>

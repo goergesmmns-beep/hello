@@ -1,10 +1,10 @@
-import { listings } from "@/content/listings";
+import type { Listing } from "@/content/listings";
 
 /**
  * Reads a forwarded marketplace lead email. Written for labelled fields ("Name: ...").
  * Check it against a real BizBuySell lead email before going live.
  */
-export function parseLead(subject: string, text: string) {
+export function parseLead(subject: string, text: string, listings: Listing[]) {
   const field = (...labels: string[]) => {
     for (const l of labels) {
       const m = text.match(new RegExp(`^\\s*${l}\\s*:\\s*(.+)$`, "im"));

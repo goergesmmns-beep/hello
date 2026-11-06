@@ -12,13 +12,13 @@ function useAct(id: string) {
   const go = async (body: object, done = "") => { setBusy(true); setMsg(""); const r = await fetch(`/api/admin/buyers/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); setBusy(false); if (r.ok) { setMsg(done); router.refresh(); } else setMsg("That did not work. Try again."); };
   return { busy, msg, go };
 }
-export function Decide({ id, stage, compact, archived }: { id: string; stage: string; compact?: boolean; archived?: boolean }) {
+export function Decide({ id, stage, compact, archived, paused }: { id: string; stage: string; compact?: boolean; archived?: boolean; paused?: boolean }) {
   const { busy, msg, go } = useAct(id);
   const size = compact ? "!min-h-8 !px-2.5 !text-[13px]" : "!min-h-10";
   return <div className="flex flex-wrap items-center gap-2">
     {!["cim", "call"].includes(stage) && <button id={compact ? undefined : "release"} disabled={busy} className={`btn btn-brand ${size}`} onClick={() => go({ action: "release" })}>Release CIM</button>}
     {stage !== "warm" && <button id={compact ? undefined : "warm"} disabled={busy} className={`btn btn-ghost ${size}`} onClick={() => go({ action: "warm" })}>Keep warm</button>}
-    {!compact && <><button id="resend" disabled={busy} className={`btn btn-ghost ${size}`} onClick={() => go({ action: "resend" }, "Link sent.")}>Resend link</button><button id="archive" disabled={busy} className={`btn btn-ghost ${size}`} onClick={() => go({ action: "archive", value: !archived })}>{archived ? "Restore" : "Archive"}</button></>}
+    {!compact && <><button id="resend" disabled={busy} className={`btn btn-ghost ${size}`} onClick={() => go({ action: "resend" }, "Link sent.")}>Resend link</button><button id="archive" disabled={busy} className={`btn btn-ghost ${size}`} onClick={() => go({ action: "archive", value: !archived })}>{archived ? "Restore" : "Archive"}</button><button id="toggle-reminders" disabled={busy} className={`btn btn-ghost ${size}`} onClick={() => go({ action: "reminders", value: !!paused })}>{paused ? "Resume reminders" : "Pause reminders"}</button></>}
     {msg && <span role="status" className="text-sm text-muted-foreground">{msg}</span>}
   </div>;
 }

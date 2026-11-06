@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Check, ExternalLink, FileText } from "lucide-react";
 import { Decide, NoteForm } from "@/components/desk/actions";
 import { Card, StagePill } from "@/components/desk/shell";
-import { getListing, money } from "@/content/listings";
+import { money } from "@/content/listings";
+import { findListing } from "@/lib/catalog";
 import { isAdmin } from "@/lib/admin";
 import { routeLabels } from "@/lib/analytics";
 import { config } from "@/lib/pipedrive";
@@ -17,7 +18,7 @@ export default async function BuyerPage({ params }: { params: Promise<{ id: stri
   if (!(await isAdmin())) redirect("/admin/login");
   const b = await buyerById((await params).id);
   if (!b) notFound();
-  const l = getListing(b.listingSlug)!; const c = b.capacity; const rule = await ruleFor(l); const pd = await config().catch(() => null);
+  const l = (await findListing(b.listingSlug))!; const c = b.capacity; const rule = await ruleFor(l); const pd = await config().catch(() => null);
   const did = (t: string) => b.events.some((e) => e.type === t);
   const steps: [string, boolean][] = [["Inquiry", true], ["Profile", !!b.why], ["NDA", !!b.nda], ["Funding", !!c || did("cim")], ["CIM released", did("cim")], ["CIM opened", b.cimViews > 0], ["Call", did("call")]];
   const profile: [string, string | undefined][] = [["Email", b.email], ["Phone", b.phone], ["Company", b.company], ["LinkedIn", b.linkedin], ["Website", b.website], ["Buyer route", b.route && routeLabels[b.route]], ["Source", b.source], ["Inquiry message", b.message]];
@@ -25,7 +26,7 @@ export default async function BuyerPage({ params }: { params: Promise<{ id: stri
   const Rows = ({ rows }: { rows: [string, string | undefined][] }) => <dl className="-my-2">{rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="grid gap-1 border-b py-2 last:border-0 sm:grid-cols-[150px_1fr]"><dt className="text-sm text-muted-foreground">{k}</dt><dd className="min-w-0 break-words text-[15px]">{v}</dd></div>)}</dl>;
   return (<>
     <Link href="/admin/buyers" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft size={15} /> Buyers</Link>
-    <div className="mb-5 mt-3 flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm text-muted-foreground">{l.title}</p><h1 className="text-[34px] font-semibold leading-tight">{b.name}</h1><div className="mt-2 flex items-center gap-2"><StagePill stage={b.stage} label={stageLabels[b.stage]} />{b.archived && <span className="text-sm text-muted-foreground">Archived</span>}</div></div><Decide id={b.id} stage={b.stage} archived={b.archived} /></div>
+    <div className="mb-5 mt-3 flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm text-muted-foreground">{l.title}</p><h1 className="text-[34px] font-semibold leading-tight">{b.name}</h1><div className="mt-2 flex items-center gap-2"><StagePill stage={b.stage} label={stageLabels[b.stage]} />{b.archived && <span className="text-sm text-muted-foreground">Archived</span>}</div></div><Decide id={b.id} stage={b.stage} archived={b.archived} paused={b.remindersOff} /></div>
     <ol className="mb-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-7">{steps.map(([s, on]) => <li key={s} className="flex items-center gap-1.5 bg-card px-3 py-2.5 text-[13px]"><span className={`grid size-4 shrink-0 place-items-center rounded-full ${on ? "bg-brand text-brand-foreground" : "border"}`}>{on && <Check size={11} strokeWidth={3} />}</span><span className={on ? "" : "text-muted-foreground"}>{s}</span></li>)}</ol>
     <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-3">

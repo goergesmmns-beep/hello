@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { publicBuyer, requestCall, saveProfile, signNda, submitCapacity } from "@/lib/flow";
+import { limited } from "@/lib/limit";
+import { stopReminders, publicBuyer, requestCall, saveProfile, signNda, submitCapacity } from "@/lib/flow";
 
 type C = { params: Promise<{ token: string }> };
 const MAX = 4 * 1024 * 1024;
@@ -10,6 +11,8 @@ const sign = z.object({ action: z.literal("sign"), signedName: z.string().min(2)
 
 export async function POST(req: Request, { params }: C) {
   const { token } = await params;
+  const stop = await limited(`access:${token}`, 40, 3600);
+  if (stop) return stop;
   try {
     if (req.headers.get("content-type")?.includes("multipart/form-data")) {
       const f = await req.formData();
@@ -31,6 +34,7 @@ export async function POST(req: Request, { params }: C) {
       const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
       return NextResponse.json(publicBuyer(await signNda(token, { signedName: s.signedName, ip, userAgent: req.headers.get("user-agent") ?? "unknown" })));
     }
+    if (body.action === "stop") { await stopReminders(token); return NextResponse.json({ ok: true }); }
     if (body.action === "call") return NextResponse.json(publicBuyer(await requestCall(token, body.note)));
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   } catch (e) {

@@ -5,7 +5,7 @@ export type Listing = {
   headline: string;
   band: "over" | "under";
   category: string;
-  status: "available" | "offers" | "pending";
+  status: "available" | "offers" | "pending" | "sold" | "draft";
   askLabel: string;
   askUsd: number | null;
   metrics: { label: string; value: string }[];
@@ -127,5 +127,5 @@ export const listings: Listing[] = [
 ];
 
 export const getListing = (slug: string) => listings.find((l) => l.slug === slug);
-export const statusLabel = { available: "Available", offers: "Accepting offers", pending: "Sale pending" } as const;
+export const statusLabel = { available: "Available", offers: "Accepting offers", pending: "Sale pending", sold: "Sold", draft: "Hidden" } as const;
 export const money = (n: number) => "$" + n.toLocaleString("en-US");

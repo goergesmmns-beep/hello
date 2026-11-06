@@ -1,5 +1,5 @@
 import type { Buyer, Stage } from "./types";
-import { getListing } from "@/content/listings";
+import { findListing } from "./catalog";
 import { decrypt, encrypt } from "./secret";
 import { getSetting, setSetting } from "./store";
 
@@ -58,7 +58,7 @@ export const saveMapping = (c: PdConfig, pipelineId: number, stages: PdConfig["s
 export async function syncBuyer(b: Buyer) {
   const c = await config();
   if (!c) return false;
-  const listing = getListing(b.listingSlug);
+  const listing = await findListing(b.listingSlug);
   b.pipedrive ??= {};
   if (!b.pipedrive.personId) {
     const found = await call<{ data: { items: { item: { id: number } }[] } }>(c, "GET", `/api/v2/persons/search?term=${encodeURIComponent(b.email)}&fields=email&exact_match=true&limit=1`);
