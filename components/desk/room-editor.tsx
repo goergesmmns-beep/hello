@@ -1,0 +1,29 @@
+"use client";
+import { useState } from "react";
+import { FileText, Plus, Trash2, Upload } from "lucide-react";
+import type { Room } from "@/content/listings";
+import { Card } from "./shell";
+
+type Doc = { id: string; name: string };
+const n = (v: string) => { const x = v.replace(/[^\d-]/g, ""); return x && x !== "-" ? Number(x) : 0; };
+/** Private content buyers see in the deal room after their CIM is released. */
+export function RoomEditor({ slug, room, onChange, docs: initial }: { slug?: string; room: Room; onChange: (r: Room) => void; docs: Doc[] }) {
+  const [docs, setDocs] = useState(initial); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
+  const fin = room.financials ?? []; const faq = room.faq ?? [];
+  const set = <K extends keyof Room>(k: K, v: Room[K]) => onChange({ ...room, [k]: v });
+  const docCall = async (init: RequestInit, q = "") => { setBusy(true); setMsg(""); const r = await fetch(`/api/admin/listings/${slug}/docs${q}`, init); const d = await r.json().catch(() => ({})); setBusy(false); if (r.ok) setDocs(d.docs); else setMsg(d.error ?? "That did not work."); };
+  const A = (k: "reason" | "team" | "transition" | "structure", label: string, ph: string) => <label className="field" htmlFor={`r-${k}`}>{label}<textarea id={`r-${k}`} rows={3} className="input" value={room[k] ?? ""} placeholder={ph} onChange={(e) => set(k, e.target.value || undefined)} /></label>;
+  return <Card title="Deal room" sub="Private. Only buyers with a released CIM see this."><div className="space-y-6">
+    <div><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">Financials</p><button type="button" id="add-period" className="btn btn-ghost !min-h-8 !px-2 !text-sm" onClick={() => set("financials", [...fin, { period: "", revenue: 0, sde: 0 }])}><Plus size={15} /> Add period</button></div>
+      {fin.length ? <div className="space-y-2">{fin.map((f, i) => <div key={i} className="grid grid-cols-[0.8fr_1fr_1fr_40px] gap-2"><input aria-label="Period" id={`fp-${i}`} placeholder="2025" className="input" value={f.period} onChange={(e) => set("financials", fin.map((x, j) => (j === i ? { ...x, period: e.target.value } : x)))} /><input aria-label="Revenue, USD" id={`fr-${i}`} inputMode="numeric" placeholder="Revenue" className="input num" value={f.revenue || ""} onChange={(e) => set("financials", fin.map((x, j) => (j === i ? { ...x, revenue: n(e.target.value) } : x)))} /><input aria-label="SDE, USD" id={`fs-${i}`} inputMode="numeric" placeholder="SDE" className="input num" value={f.sde || ""} onChange={(e) => set("financials", fin.map((x, j) => (j === i ? { ...x, sde: n(e.target.value) } : x)))} /><button type="button" aria-label="Remove period" className="btn btn-ghost !min-h-10 !px-0" onClick={() => set("financials", fin.filter((_, j) => j !== i))}><Trash2 size={15} /></button></div>)}</div> : <p className="text-sm text-muted-foreground">Add years or TTM. Buyers get a chart, margins and the asking multiple.</p>}</div>
+    {A("reason", "Why the owner is selling", "Retiring after 12 years and focusing on a new venture.")}
+    {A("team", "Team and operations", "Two full-time staff and three contractors. Owner works about 10 hours a week.")}
+    {A("transition", "Transition support", "90 days of training included, with longer consulting available.")}
+    {A("structure", "Deal structure", "Seller open to a 10% seller note. SBA pre-qualified.")}
+    <div><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">Questions and answers</p><button type="button" id="add-faq" className="btn btn-ghost !min-h-8 !px-2 !text-sm" onClick={() => set("faq", [...faq, { q: "", a: "" }])}><Plus size={15} /> Add</button></div>
+      <div className="space-y-3">{faq.map((f, i) => <div key={i} className="space-y-2 rounded-md border p-3"><div className="grid grid-cols-[1fr_40px] gap-2"><input aria-label="Question" id={`fq-${i}`} placeholder="Question" className="input" value={f.q} onChange={(e) => set("faq", faq.map((x, j) => (j === i ? { ...x, q: e.target.value } : x)))} /><button type="button" aria-label="Remove question" className="btn btn-ghost !min-h-10 !px-0" onClick={() => set("faq", faq.filter((_, j) => j !== i))}><Trash2 size={15} /></button></div><textarea aria-label="Answer" id={`fa-${i}`} rows={2} placeholder="Answer" className="input" value={f.a} onChange={(e) => set("faq", faq.map((x, j) => (j === i ? { ...x, a: e.target.value } : x)))} /></div>)}</div></div>
+    {slug ? <div><p className="mb-2 text-sm font-medium">Documents</p>{docs.length > 0 && <ul className="mb-2 space-y-1.5">{docs.map((d) => <li key={d.id} className="flex items-center gap-2 rounded-md border p-2 text-sm"><FileText size={16} className="text-brand-ink" /><span className="truncate">{d.name}</span><button type="button" aria-label={`Remove ${d.name}`} disabled={busy} className="ml-auto cursor-pointer" onClick={() => docCall({ method: "DELETE" }, `?id=${d.id}`)}><Trash2 size={15} /></button></li>)}</ul>}
+      <label className="btn btn-ghost w-full cursor-pointer" htmlFor="room-file"><Upload size={16} /> {busy ? "Uploading…" : "Add a document"}</label><input id="room-file" type="file" accept="application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) { const fd = new FormData(); fd.append("file", f); docCall({ method: "POST", body: fd }); } e.target.value = ""; }} />
+      <p className="mt-2 text-xs text-muted-foreground">P&amp;L, tax returns, customer concentration and so on. PDF under 4 MB. Each buyer gets a copy stamped with their email.</p>{msg && <p role="alert" className="mt-1 text-sm text-destructive">{msg}</p>}</div> : <p className="text-sm text-muted-foreground">Save the listing to add documents.</p>}
+  </div></Card>;
+}

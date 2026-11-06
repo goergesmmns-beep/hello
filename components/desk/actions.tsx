@@ -61,3 +61,11 @@ export function TaskCheck({ id, taskId, done, text }: { id: string; taskId: stri
   return <label className="flex min-w-0 items-start gap-2 text-sm"><input type="checkbox" checked={on} disabled={busy} onChange={() => { setOn(!on); go({ action: "task-toggle", taskId }); }} className="mt-0.5 size-4 accent-black" /><span className={on ? "text-muted-foreground line-through" : ""}>{text}</span></label>;
 }
 export function PrintButton() { return <button className="btn btn-primary !min-h-10 print:hidden" onClick={() => window.print()}>Print or save as PDF</button>; }
+export function AnswerForm({ id, qid }: { id: string; qid: string }) {
+  const { busy, go } = useAct(id); const [a, setA] = useState("");
+  return <form className="mt-2 space-y-2" onSubmit={async (e) => { e.preventDefault(); if (a.trim()) { await go({ action: "answer", qid, a: a.trim() }); setA(""); } }}><label className="sr-only" htmlFor={`ans-${qid}`}>Answer</label><textarea id={`ans-${qid}`} rows={2} className="input !text-sm" value={a} onChange={(e) => setA(e.target.value)} placeholder="Answer. The buyer gets an email and sees it in the deal room." /><button disabled={busy || !a.trim()} className="btn btn-primary !min-h-9">Send answer</button></form>;
+}
+export function SyncButton({ id }: { id: string }) {
+  const { busy, msg, go } = useAct(id);
+  return <span className="flex items-center gap-2"><button id="crm-sync" disabled={busy} className="btn btn-ghost !min-h-8 !px-2.5 !text-[13px]" onClick={() => go({ action: "crm-sync" }, "Synced.")}>{busy ? "Syncing…" : "Sync now"}</button>{msg && <span role="status" className="text-xs">{msg}</span>}</span>;
+}

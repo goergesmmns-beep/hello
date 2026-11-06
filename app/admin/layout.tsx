@@ -1,3 +1,6 @@
-import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Advisor desk", robots: { index: false } };
-export default function L({ children }: { children: React.ReactNode }) { return <div className="dark min-h-dvh bg-background text-foreground">{children}</div>; }
+import { cookies } from "next/headers";
+import { DeskTheme } from "@/components/desk/theme";
+export default async function L({ children }: { children: React.ReactNode }) {
+  const t = (await cookies()).get("desk_theme")?.value === "light" ? "light" : "dark";
+  return <DeskTheme initial={t}>{children}</DeskTheme>;
+}

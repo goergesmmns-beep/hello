@@ -164,3 +164,8 @@ export async function clearHits(key: string) {
   const sql = await db();
   await sql`delete from rate_limits where key = ${key}`;
 }
+export async function deleteFile(id: string) {
+  if (useLocal()) { const d = await readLocal(); d.files = d.files.filter((f) => f.id !== id); return writeLocal(d); }
+  const sql = await db();
+  await sql`delete from files where id = ${id}`;
+}

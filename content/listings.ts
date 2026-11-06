@@ -1,4 +1,10 @@
 export type Gate = "after_nda" | "after_review";
+/** Private deal room content. Only buyers with an open CIM see it. */
+export type Room = {
+  financials?: { period: string; revenue: number; sde: number }[];
+  reason?: string; transition?: string; structure?: string; team?: string;
+  faq?: { q: string; a: string }[];
+};
 export type Listing = {
   slug: string;
   title: string;
@@ -17,6 +23,7 @@ export type Listing = {
   /** Placeholder rule: 10% of asking. Marty sets the real figure per listing. */
   floorUsd: number | null;
   idealBuyer: "any" | "strategic";
+  room?: Room;
 };
 
 export const listings: Listing[] = [
@@ -35,6 +42,10 @@ export const listings: Listing[] = [
       { heading: "Room to grow", text: "Documented headroom includes live call transfers, web and lead-gen expansion, in-house media buying, additional insurance verticals, and a buyer base still under-penetrated relative to publisher supply." },
     ],
     gate: "after_review", floorUsd: 210000, idealBuyer: "any",
+    room: {
+      financials: [{ period: "TTM", revenue: 5600000, sde: 633000 }],
+      faq: [{ q: "Is the business tied to the current owners?", a: "Current ownership devotes a modest number of hours per week. The day-to-day is largely automated, and transition support is open to discussion." }, { q: "Where does the revenue come from?", a: "About 60 active insurance buyers, with call volume supplied by about 50 active publishers. All revenue is U.S.-based." }],
+    },
   },
   {
     slug: "online-art-design-education",

@@ -49,13 +49,13 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
         {Err}<button className="btn btn-primary w-full" disabled={busy}>Continue to NDA <ArrowRight size={17} /></button>
       </form>}
 
-      {step === 1 && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (drawn === "") { setErr("Draw your signature, or switch to Type."); return; } const f = new FormData(e.currentTarget); send(JSON.stringify({ action: "sign", signedName: sigName, agree: f.get("agree") === "on", ...(drawn ? { signature: drawn } : {}) })); }}>
+      {step === 1 && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (drawn === "") { setErr("Draw your signature, or switch to Type."); return; } const f = new FormData(e.currentTarget); send(JSON.stringify({ action: "sign", signedName: sigName, agree: true, ...(drawn ? { signature: drawn } : {}) })); }}>
         <h1 className="text-3xl font-semibold">Sign the NDA</h1>
         {ndaDraft && <p className="rounded-md border border-brand bg-brand/15 p-3 text-sm font-medium">Draft wording for testing. Westbound Road's approved NDA replaces this before launch.</p>}
         <div className="max-h-80 space-y-3 overflow-auto rounded-md border p-4 text-[15px]">{clauses.map(([h, t]) => <div key={h}><p className="font-semibold">{h}</p><p className="text-muted-foreground">{t}</p></div>)}</div>
         <SignaturePad name={sigName} onName={setSigName} onDrawn={setDrawn} />
-        <label className="flex items-start gap-2.5 text-[15px]" htmlFor="agree"><input id="agree" name="agree" type="checkbox" required className="mt-1 size-4 accent-black" />I agree to this NDA, and to using an electronic signature and records. You can download a signed copy right after.</label>
-        {Err}<button className="btn btn-primary w-full" disabled={busy}>Sign NDA</button>
+        <p className="text-sm text-muted-foreground">By tapping Agree and sign, you agree to this NDA and to signing electronically. You get a signed copy right after.</p>
+        {Err}<div className="sticky bottom-0 -mx-4 border-t bg-background/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:p-0"><button id="sign" className="btn btn-primary w-full" disabled={busy}>{busy ? "Signing…" : "Agree and sign"}</button></div>
       </form>}
 
       {step === 2 && (b.route === "own" || b.route === "letter") && <FundsForm token={token} floor={listing.floor} note={b.funds?.note} existing={b.funds?.docs ?? []} onDone={(x) => setB(x)} />}
@@ -75,7 +75,7 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
       {b.stage === "review" && <div className="space-y-3"><h1 className="text-3xl font-semibold">An advisor has this.</h1><Done>NDA signed</Done>{b.funds?.docs.length ? <Done>Proof of funds received: {b.funds.docs.length} {b.funds.docs.length === 1 ? "document" : "documents"}</Done> : null}<p className="text-muted-foreground">We will email you as soon as your CIM is ready.</p></div>}
 
       {(b.stage === "cim" || b.stage === "call") && <div className="space-y-4"><h1 className="text-3xl font-semibold">{code ? "Your CIM is open." : "Your CIM is ready."}</h1>
-        {code ? <><a href={`/api/cim/${token}?v=${code}`} target="_blank" rel="noreferrer" className="btn btn-primary w-full"><FileText size={18} /> Open CIM</a><p className="text-sm text-muted-foreground">Your email appears on every page.</p>
+        {code ? <><Link id="enter-room" href={`/room/${token}?v=${code}`} className="btn btn-brand w-full">Enter the deal room <ArrowRight size={18} /></Link><a href={`/api/cim/${token}?v=${code}`} target="_blank" rel="noreferrer" className="btn btn-ghost w-full"><FileText size={18} /> Download the CIM</a><p className="text-sm text-muted-foreground">Financials, documents, Q&amp;A and next steps in one place. Your email appears on every page.</p>
           {b.stage === "cim" ? (bookingUrl ? <a id="book" href={bookingUrl} target="_blank" rel="noreferrer" className="btn btn-ghost w-full" onClick={() => send(JSON.stringify({ action: "call", note: "Opened the booking link" }))}>Book a call with an advisor</a> : <button className="btn btn-ghost w-full" disabled={busy} onClick={() => send(JSON.stringify({ action: "call" }))}>Request a call with an advisor</button>) : <Done>{bookingUrl ? "Your booking link opened in a new tab" : "An advisor will contact you about a call"}</Done>}</>
         : <><p className="flex gap-2 text-muted-foreground"><Lock size={18} className="mt-1 shrink-0" />We sent a private link to {b.email}. Open it to confirm your email and view the CIM.</p>{localLink && <Link className="btn btn-ghost w-full" href={localLink} id="local-link">Test mode: open the emailed link</Link>}</>}
       </div>}

@@ -51,6 +51,11 @@ export async function watermarkedCim(listing: Listing, email: string) {
     page.drawText(latin(listing.title), { x: 56, y: 700, size: 20, font: f, maxWidth: 500 });
     page.drawText("Sample page. The real CIM has not been added yet.", { x: 56, y: 640, size: 13, font: f });
   }
+  return stampPdf(doc, email);
+}
+/** Stamps the buyer's email across every page of any PDF. */
+export async function watermarkBytes(bytes: Uint8Array, email: string) { return stampPdf(await PDFDocument.load(bytes), email); }
+async function stampPdf(doc: PDFDocument, email: string) {
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const stamp = `${latin(email)}  -  ${new Date().toISOString().slice(0, 10)}  -  Confidential`;
   for (const p of doc.getPages()) {

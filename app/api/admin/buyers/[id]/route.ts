@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin";
-import { addOffer, addTask, declineFunds, requestMoreFunds, setOfferStatus, toggleTask, verifyFunds, addAdvisorNote, keepWarm, releaseCim, resendLink, setArchived, setReminders } from "@/lib/flow";
+import { answerQuestion, resync, addOffer, addTask, declineFunds, requestMoreFunds, setOfferStatus, toggleTask, verifyFunds, addAdvisorNote, keepWarm, releaseCim, resendLink, setArchived, setReminders } from "@/lib/flow";
 const statuses = ["Draft", "Submitted", "Countered", "Accepted", "Declined", "Withdrawn"];
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Sign in again." }, { status: 401 });
@@ -17,6 +17,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     else if (b.action === "offer-status" && statuses.includes(b.status)) await setOfferStatus(id, b.offerId, b.status);
     else if (b.action === "task" && typeof b.text === "string" && b.text.trim()) await addTask(id, b.text.trim().slice(0, 300), typeof b.due === "string" && b.due ? b.due.slice(0, 10) : undefined);
     else if (b.action === "task-toggle") await toggleTask(id, b.taskId);
+    else if (b.action === "answer" && typeof b.a === "string" && b.a.trim()) await answerQuestion(id, b.qid, b.a.trim().slice(0, 3000));
+    else if (b.action === "crm-sync") await resync(id);
     else if (b.action === "archive") await setArchived(id, !!b.value);
     else if (b.action === "reminders") await setReminders(id, !!b.value);
     else if (b.action === "note" && typeof b.text === "string" && b.text.trim()) await addAdvisorNote(id, b.text.trim().slice(0, 4000));

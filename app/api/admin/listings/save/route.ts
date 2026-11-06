@@ -12,6 +12,7 @@ const schema = z.object({
   status: z.enum(["available", "offers", "pending", "sold", "draft"]), askLabel: t(40).min(1), askUsd: z.number().int().nonnegative().nullable(),
   metrics: z.array(z.object({ label: t(60), value: t(60) })).max(8), summary: t(800).min(10), highlights: z.array(t(200)).max(12),
   body: z.array(z.object({ heading: t(100).optional(), text: t(4000) })).max(10), gate: z.enum(["after_nda", "after_review"]), floorUsd: z.number().int().nonnegative().nullable(), idealBuyer: z.enum(["any", "strategic"]),
+  room: z.object({ financials: z.array(z.object({ period: t(30).min(1), revenue: z.number().nonnegative(), sde: z.number() })).max(8).optional(), reason: t(1500).optional(), transition: t(1500).optional(), structure: t(1500).optional(), team: t(1500).optional(), faq: z.array(z.object({ q: t(300).min(3), a: t(2000).min(1) })).max(20).optional() }).optional(),
 });
 export async function POST(req: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Sign in again." }, { status: 401 });

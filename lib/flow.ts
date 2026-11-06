@@ -7,12 +7,13 @@ import { notifyAdvisors, sendMail, siteUrl } from "./mail";
 import { ruleFor } from "./rules";
 import { buyerByEmail, buyerById, buyerByToken, saveBuyer, saveFile } from "./store";
 import type { Buyer, Offer, OfferStatus, Route, Stage } from "./types";
+import { fileIds, getFile } from "./store";
 
 const log = (b: Buyer, type: string, detail: string) => b.events.unshift({ at: new Date().toISOString(), type, detail });
 
 async function commit(b: Buyer, note?: string) {
   try { await syncBuyer(b); if (note) await addNote(b, note); }
-  catch (e) { log(b, "crm_error", (e as Error).message.slice(0, 200)); console.error(e); }
+  catch (e) { b.pipedrive = { ...b.pipedrive, error: (e as Error).message.slice(0, 200) }; log(b, "crm_error", (e as Error).message.slice(0, 200)); console.error(e); }
   await saveBuyer(b);
 }
 export const buyerLink = (b: Buyer) => `${siteUrl()}/access/${b.token}?v=${b.verifyCode}`;
@@ -223,8 +224,56 @@ export async function stopReminders(token: string) {
   b.remindersOff = true; log(b, "reminders", "Buyer stopped reminders"); await saveBuyer(b);
   return b;
 }
-export async function recordCimView(b: Buyer) {
-  b.cimViews += 1; log(b, "cim_view", "CIM opened"); await commit(b);
+export async function recordCimView(b: Buyer, what = "CIM opened") {
+  b.cimViews += 1; log(b, "cim_view", what); await commit(b);
+}
+/** The deal room is open to buyers whose CIM is released and who opened the emailed link. */
+export async function roomBuyer(token: string, v?: string | null) {
+  const b = await buyerByToken(token);
+  return b && v && v === b.verifyCode && ["cim", "call"].includes(b.stage) ? b : null;
+}
+export async function trackRoom(b: Buyer, sections: Record<string, number>) {
+  const r = b.room ?? { sections: {}, docs: {} };
+  for (const [k, sec] of Object.entries(sections)) if (/^[a-z]{2,20}$/.test(k) && sec > 0) r.sections[k] = Math.min((r.sections[k] ?? 0) + Math.min(sec, 120), 36000);
+  b.room = { ...r, lastAt: new Date().toISOString() }; await saveBuyer(b);
+}
+export async function trackDoc(b: Buyer, name: string) {
+  const r = b.room ?? { sections: {}, docs: {} };
+  r.docs[name] = (r.docs[name] ?? 0) + 1; b.room = { ...r, lastAt: new Date().toISOString() };
+  log(b, "cim_view", `Opened ${name}`); b.cimViews += 1; await commit(b);
+}
+export async function roomDocs(slug: string) {
+  const ids = await fileIds(`room:${slug}:`);
+  return (await Promise.all(ids.map(async (id) => { const f = await getFile(id); return f && { id: id.split(":")[2], name: f.name, at: f.createdAt }; }))).filter((x): x is { id: string; name: string; at: string } => !!x).sort((a, b) => a.at.localeCompare(b.at));
+}
+export async function askQuestion(b: Buyer, q: string) {
+  const listing = (await findListing(b.listingSlug))!;
+  b.questions = [...(b.questions ?? []), { id: randomUUID(), at: new Date().toISOString(), q }];
+  log(b, "question", "Asked a question in the deal room");
+  await safely(() => notifyAdvisors(`Buyer question: ${b.name}, ${listing.title}`, `${q}\n\nAnswer it here:\n${siteUrl()}/admin/buyers/${b.id}`), b);
+  await commit(b, `Buyer question: ${q}`);
+  return b;
+}
+export async function answerQuestion(id: string, qid: string, a: string) {
+  const b = await buyerById(id); if (!b) throw new Error("Buyer not found");
+  const listing = (await findListing(b.listingSlug))!;
+  b.questions = (b.questions ?? []).map((x) => (x.id === qid ? { ...x, a, answeredAt: new Date().toISOString() } : x));
+  log(b, "answer", "Advisor answered a question");
+  await safely(() => sendMail(b.email, `Your question about ${listing.title} has an answer`, `An advisor answered your question in the deal room.\n\n${buyerLink(b).replace("/access/", "/room/")}\n\nWestbound Road`), b);
+  await commit(b, `Advisor answer: ${a}`);
+  return b;
+}
+export async function submitInterest(b: Buyer, o: { amountUsd: number; cashUsd?: number; sellerNoteUsd?: number; earnoutUsd?: number; notes?: string }) {
+  const listing = (await findListing(b.listingSlug))!;
+  b.offers = [{ ...o, id: randomUUID(), at: new Date().toISOString(), status: "Submitted" }, ...(b.offers ?? [])];
+  log(b, "offer", `Indication of interest: $${o.amountUsd.toLocaleString("en-US")}`);
+  await safely(() => notifyAdvisors(`Indication of interest: ${b.name}, ${listing.title}`, `$${o.amountUsd.toLocaleString("en-US")}\n\n${siteUrl()}/admin/buyers/${b.id}`), b);
+  await commit(b, `Indication of interest from the deal room: $${o.amountUsd.toLocaleString("en-US")}. ${o.notes ?? ""}`);
+  return b;
+}
+export async function resync(id: string) {
+  const b = await buyerById(id); if (!b) throw new Error("Buyer not found");
+  await commit(b); return b;
 }
 async function need(token: string) {
   const b = await buyerByToken(token);

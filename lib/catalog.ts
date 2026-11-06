@@ -7,8 +7,10 @@ export async function catalog(): Promise<Listing[]> {
 }
 export const isOpen = (l: Listing) => l.status === "available" || l.status === "offers";
 export const isPublic = (l: Listing) => l.status !== "draft" && l.status !== "sold";
-export async function publicListings() { return (await catalog()).filter(isPublic); }
-export async function soldListings() { return (await catalog()).filter((l) => l.status === "sold"); }
+/** Public pages never get deal room content, floors or rules. */
+const strip = ({ room, ...l }: Listing): Listing => { void room; return l; };
+export async function publicListings() { return (await catalog()).filter(isPublic).map(strip); }
+export async function soldListings() { return (await catalog()).filter((l) => l.status === "sold").map(strip); }
 export async function findListing(slug: string) { return (await catalog()).find((l) => l.slug === slug); }
 export async function saveListing(l: Listing) {
   const all = await catalog();
