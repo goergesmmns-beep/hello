@@ -23,7 +23,7 @@ function useLocal() {
 let client: ReturnType<typeof postgres> | null = null;
 let ready: Promise<unknown> | null = null;
 async function db() {
-  client ??= postgres(process.env.DATABASE_URL!, { max: 3, prepare: false });
+  client ??= postgres(process.env.DATABASE_URL!, { max: 3, prepare: false, onnotice: () => {} });
   const c = client;
   ready ??= (async () => {
     // Several requests can start together on a cold deploy, so one takes a lock while the tables are made.

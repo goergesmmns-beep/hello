@@ -8,6 +8,7 @@ import { money } from "@/content/listings";
 import { findListing } from "@/lib/catalog";
 import { recordCimView, roomBuyer, roomDocs } from "@/lib/flow";
 import { getFollowups } from "@/lib/reminders";
+import { currentUser } from "@/lib/accounts";
 
 export const metadata: Metadata = { title: "Deal room", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
   const b = await roomBuyer(token, v);
   if (!b) redirect(`/access/${token}`);
   const l = (await findListing(b.listingSlug))!;
+  const mine = (await currentUser().catch(() => null))?.email === b.email.toLowerCase();
   const [docs, { bookingUrl }] = await Promise.all([roomDocs(l.slug), getFollowups()]);
   await recordCimView(b, "Deal room opened");
   const r = l.room ?? {}; const fin = r.financials ?? []; const last = fin[fin.length - 1];
@@ -46,7 +48,7 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
       <RoomTracker token={token} v={v!} />
       <div aria-hidden className="pointer-events-none fixed inset-0 z-[60] select-none" style={{ backgroundImage: mark }} />
       <header className="dark bg-background text-foreground">
-        <div className="wrap flex h-14 items-center justify-between border-b border-white/10"><Wordmark /><span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock size={13} /> Private deal room</span></div>
+        <div className="wrap flex h-14 items-center justify-between border-b border-white/10"><Wordmark /><span className="flex items-center gap-4 text-xs text-muted-foreground">{mine && <Link href={`/buyer/deals/${b.id}`} className="text-sm font-medium hover:text-foreground">← Dashboard</Link>}<span className="hidden items-center gap-1.5 sm:flex"><Lock size={13} /> Private deal room</span></span></div>
         <div className="wrap relative overflow-hidden py-10 md:py-14">
           <div aria-hidden className="aurora absolute inset-0 opacity-60" />
           <div className="relative">

@@ -12,7 +12,7 @@ function AccountLink() {
   const [who, setWho] = useState<string | null>(null);
   useEffect(() => { const m = document.cookie.match(/(?:^|; )wb_who=([^;]+)/); setWho(m ? decodeURIComponent(m[1]) : ""); }, []);
   if (who === null) return <span className="hidden w-20 sm:block" />;
-  return who ? <Link id="nav-account" href="/account" className="hidden items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium hover:border-foreground/40 sm:flex"><span className="grad-av grid size-7 place-items-center rounded-full text-[11px] font-bold">{who[0]?.toUpperCase()}</span>{who}</Link> : <Link id="nav-login" href="/login" className="hidden px-2 text-[15px] font-medium text-muted-foreground hover:text-foreground sm:block">Log in</Link>;
+  return who ? <Link id="nav-account" href="/account" className="flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium hover:border-foreground/40"><span className="grad-av grid size-7 place-items-center rounded-full text-[11px] font-bold">{who[0]?.toUpperCase()}</span><span className="hidden sm:inline">Dashboard</span><span className="sm:hidden">{who}</span></Link> : <Link id="nav-login" href="/login" className="hidden px-2 text-[15px] font-medium text-muted-foreground hover:text-foreground sm:block">Log in</Link>;
 }
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -30,7 +30,7 @@ export function Header() {
         </div>
       </div>
       {open && <nav className="wrap flex flex-col border-t py-3 lg:hidden" aria-label="Mobile">
-        {[...nav, { href: "/account", label: "Your account" }, { href: "/contact", label: "Contact" }].map((n) => <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className="py-3 text-lg font-medium">{n.label}</Link>)}
+        {[...nav, { href: "/account", label: "Your dashboard" }, { href: "/contact", label: "Contact" }].map((n) => <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className="py-3 text-lg font-medium">{n.label}</Link>)}
       </nav>}
     </header>
   );

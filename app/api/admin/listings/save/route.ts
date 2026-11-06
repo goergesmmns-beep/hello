@@ -26,6 +26,8 @@ export async function POST(req: Request) {
   const slug = existing?.slug ?? (await uniqueSlug(d.title));
   const l: Listing = { ...d, slug, band: (d.askUsd ?? 1e6) >= 1e6 ? "over" : "under", metrics: d.metrics.length ? d.metrics : [{ label: "Asking", value: d.askLabel }] };
   await saveListing(l);
+  // Opening a listing tells buyers whose saved searches match it.
+  if ((l.status === "available" || l.status === "offers") && existing?.status !== l.status && (!existing || existing.status === "draft")) await import("@/lib/alerts").then((m) => m.notifySearches(l)).catch(console.error);
   await saveRule(slug, { gate: l.gate, floorUsd: l.floorUsd });
   revalidatePath("/", "layout");
   return NextResponse.json({ ok: true, slug });

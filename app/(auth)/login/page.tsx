@@ -8,7 +8,7 @@ import { currentUser, googleReady, safeNext } from "@/lib/accounts";
 export const metadata: Metadata = { title: "Sign in", robots: { index: false } };
 export const dynamic = "force-dynamic";
 export default async function Login({ searchParams }: { searchParams: Promise<{ next?: string; error?: string; intent?: string }> }) {
-  const sp = await searchParams; const next = safeNext(sp.next ?? (sp.intent === "sell" ? "/account/sell" : "/account"));
+  const sp = await searchParams; const next = safeNext(sp.next ?? (sp.intent === "sell" ? "/seller/new" : "/account"));
   if (await currentUser()) redirect(next);
   const points = sp.intent === "sell" ? [[Store, "Submit your business privately", "A guided listing in about 15 minutes. Nothing goes public until you approve it."], [ShieldCheck, "Verified buyers only", "Every buyer signs an NDA and shows funds before seeing your name."], [LineChart, "Live seller report", "See inquiries, NDAs, verified buyers and offers as they happen."]] : [[FileSignature, "One-tap NDAs", "Sign once on your phone. Your signed copies live in your account."], [BadgeCheck, "Verified once, used everywhere", "Proof of funds carries across listings while it is valid."], [LayoutDashboard, "Every deal in one place", "Deal rooms, documents, questions and offers on one dashboard."]];
   return <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">

@@ -5,6 +5,8 @@ import { ArrowRight, BarChart3, Check, FileText, Landmark, Lock, MessagesSquare,
 import { categoryIcon, ListingCard, multipleLabel } from "@/components/listing-card";
 import { CopyLink } from "@/components/share";
 import { SaveListing } from "@/components/save-listing";
+import { SmartCta } from "@/components/smart-cta";
+import { ViewBeacon } from "@/components/view-beacon";
 import { compact, statusLabel } from "@/content/listings";
 import { findListing, isOpen, publicListings } from "@/lib/catalog";
 
@@ -23,7 +25,7 @@ export default async function ListingPage({ params }: P) {
   const all = await publicListings();
   const pending = !isOpen(l); const I = categoryIcon(l.category); const mult = multipleLabel(l);
   const similar = all.filter((x) => x.slug !== l.slug && x.status !== "pending").sort((a, b) => (b.category === l.category ? 1 : 0) - (a.category === l.category ? 1 : 0) || Math.abs((a.askUsd ?? 0) - (l.askUsd ?? 0)) - Math.abs((b.askUsd ?? 0) - (l.askUsd ?? 0))).slice(0, 3);
-  const cta = pending ? "/contact" : `/buy/${l.slug}/request`;
+  const cta = pending ? "/contact" : `/login?intent=buy&next=${encodeURIComponent(`/buyer/listings/${l.slug}`)}`;
   let n = 0; const num = () => String(++n).padStart(2, "0");
   const faq: [string, string][] = [
     ["Will the seller know who I am?", "Only after you sign the NDA, and only through your advisor. Your proof of funds documents are seen by Westbound Road advisors, not posted anywhere public."],
@@ -33,6 +35,7 @@ export default async function ListingPage({ params }: P) {
   ];
   return (
     <>
+      <ViewBeacon slug={l.slug} />
       <section className="dark relative isolate overflow-hidden bg-background text-foreground">
         <div className="aurora" aria-hidden><i /><i /></div><div aria-hidden className="grid-lines absolute inset-0 -z-10" />
         <div className="wrap relative pb-12 pt-10 md:pb-16 md:pt-16">
@@ -68,7 +71,7 @@ export default async function ListingPage({ params }: P) {
         <aside className="hidden lg:block"><div className="sticky top-24 space-y-5">
           <div className="gborder rounded-2xl p-6">
             <p className="text-sm text-muted-foreground">Asking price</p><p className="num mt-1 text-3xl font-medium">{l.askLabel}</p>{mult && <p className="num mt-1 text-sm text-muted-foreground">{mult}</p>}
-            <Link id="rail-cta" href={cta} className="btn btn-brand mt-6 w-full">{pending ? "Talk to an advisor" : "Sign NDA and unlock"} <ArrowRight size={17} /></Link>
+            <SmartCta id="rail-cta" href={cta} portal={pending ? cta : `/buyer/listings/${l.slug}`} className="btn btn-brand mt-6 w-full">{pending ? "Talk to an advisor" : "Sign NDA and unlock"} <ArrowRight size={17} /></SmartCta>
             <ul className="mt-5 space-y-2.5 text-sm">{(pending ? ["This sale is pending", "Ask about similar businesses", "Set a deal alert for the next one"] : ["One-tap NDA on any device", "Private deal room with the CIM", "Financing plans welcome"]).map((t) => <li key={t} className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-brand-ink" />{t}</li>)}</ul>
           </div>
           <div className="flex items-center justify-between ringcard p-4 text-sm"><SaveListing slug={l.slug} /><CopyLink /></div>
@@ -78,7 +81,7 @@ export default async function ListingPage({ params }: P) {
 
       {similar.length > 0 && <section className="border-t bg-muted/40"><div className="wrap py-14 md:py-20"><div className="mb-8 flex items-end justify-between gap-4"><h2 className="text-[26px] font-semibold tracking-tight md:text-3xl">Similar opportunities</h2><Link href="/buy" className="text-sm font-medium underline-offset-4 hover:underline">All listings</Link></div><div className="grid gap-4 md:grid-cols-3">{similar.map((x) => <ListingCard key={x.slug} l={x} />)}</div></div></section>}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 py-3 backdrop-blur lg:hidden" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}><div className="flex items-center gap-3"><div className="min-w-0"><p className="text-xs text-muted-foreground">Asking</p><p className="num truncate font-medium">{l.askUsd ? compact(l.askUsd) : l.askLabel}</p></div><Link id="bar-cta" href={cta} className="btn btn-brand ml-auto">{pending ? "Talk to an advisor" : "Sign NDA and unlock"}</Link></div></div>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 py-3 backdrop-blur lg:hidden" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}><div className="flex items-center gap-3"><div className="min-w-0"><p className="text-xs text-muted-foreground">Asking</p><p className="num truncate font-medium">{l.askUsd ? compact(l.askUsd) : l.askLabel}</p></div><SmartCta id="bar-cta" href={cta} portal={pending ? cta : `/buyer/listings/${l.slug}`} className="btn btn-brand ml-auto">{pending ? "Talk to an advisor" : "Sign NDA and unlock"}</SmartCta></div></div>
       <div className="h-20 lg:hidden" />
     </>
   );

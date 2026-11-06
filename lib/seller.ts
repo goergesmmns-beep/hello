@@ -40,13 +40,13 @@ export function missing(s: SellerListing) {
 export async function setStatus(s: SellerListing, status: SubStatus, note?: string, by: "advisor" | "seller" = "advisor") {
   s.status = status; s.history = [...s.history, { at: new Date().toISOString(), status, note }];
   if (status === "submitted") { s.submittedAt = new Date().toISOString(); await notifyAdvisors(`New business submitted: ${s.business.publicTitle ?? s.business.name}`, `${s.ownerName} submitted a business for review.\n\n${siteUrl()}/admin/submissions/${s.id}`).catch(() => {}); }
-  else if (by === "advisor") await sendMail(s.ownerEmail, `Your listing is ${status === "changes" ? "waiting for a few changes" : status === "approved" ? "approved" : status === "review" ? "in review" : "updated"}`, `Hi ${s.ownerName.split(" ")[0]},\n\nYour submission "${s.business.publicTitle ?? s.business.name}" is now: ${subLabels[status]}.${note ? `\n\n${note}` : ""}\n\nSee it here:\n${siteUrl()}/account/sell/${s.id}\n\nWestbound Road`).catch(() => {});
+  else if (by === "advisor") await sendMail(s.ownerEmail, `Your listing is ${status === "changes" ? "waiting for a few changes" : status === "approved" ? "approved" : status === "review" ? "in review" : "updated"}`, `Hi ${s.ownerName.split(" ")[0]},\n\nYour submission "${s.business.publicTitle ?? s.business.name}" is now: ${subLabels[status]}.${note ? `\n\n${note}` : ""}\n\nSee it here:\n${siteUrl()}/seller/switch?id=${s.id}&to=/seller\n\nWestbound Road`).catch(() => {});
   return saveSub(s);
 }
 export async function postMessage(s: SellerListing, from: "advisor" | "seller", name: string, text: string) {
   s.messages = [...s.messages, { id: randomUUID(), at: new Date().toISOString(), from, name, text }];
   if (from === "seller") await notifyAdvisors(`Message from ${s.ownerName}`, `${text}\n\n${siteUrl()}/admin/submissions/${s.id}`).catch(() => {});
-  else await sendMail(s.ownerEmail, "New message from your Westbound Road advisor", `${text}\n\nReply here:\n${siteUrl()}/account/sell/${s.id}\n\nWestbound Road`).catch(() => {});
+  else await sendMail(s.ownerEmail, "New message from your Westbound Road advisor", `${text}\n\nReply here:\n${siteUrl()}/seller/switch?id=${s.id}&to=/seller/messages\n\nWestbound Road`).catch(() => {});
   return saveSub(s);
 }
 

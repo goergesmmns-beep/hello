@@ -1,0 +1,13 @@
+import { Check, Lock } from "lucide-react";
+import { Empty, PageTitle } from "@/components/desk/panel";
+import { me } from "@/lib/my";
+import { alias, routeName, sellerCtx, sellerStage } from "@/lib/seller-portal";
+export const metadata = { title: "Buyers" };
+const band = (n?: number) => !n ? "" : n >= 5e6 ? "$5M+" : n >= 1e6 ? `$${Math.floor(n / 1e6)}M+` : `$${Math.floor(n / 1e5) * 100}K+`;
+export default async function Buyers() {
+  const u = await me("/seller/buyers"); const { buyers, live } = await sellerCtx(u);
+  return <><PageTitle title="Buyers" sub="Everyone who asked about your business. Names stay private until your advisor introduces you." />
+    <p className="mb-5 flex items-center gap-2 rounded-xl border bg-surface-1 p-3.5 text-sm text-muted-foreground"><Lock size={15} className="shrink-0" />Every buyer signs an NDA before seeing details, and an advisor checks their proof of funds before the deal room opens.</p>
+    {buyers.length ? <div className="tablebox !m-0 overflow-x-auto"><table className="w-full min-w-[820px] text-sm"><thead className="bg-surface-1 text-left text-[13px] text-muted-foreground"><tr>{["Buyer", "Funding", "Stage", "NDA", "Funds", "Deal room", "Offers", "Last active"].map((h) => <th key={h} className="px-4 py-2.5 font-medium">{h}</th>)}</tr></thead><tbody>{buyers.map((b) => <tr key={b.id} className="border-t"><td className="px-4 py-3"><span className="flex items-center gap-2.5"><span className="grad-av grid size-7 place-items-center rounded-lg text-[10px] font-bold">{alias(b).slice(-4, -2)}</span><b className="font-medium">{alias(b)}</b></span></td><td className="px-4 py-3 text-muted-foreground">{routeName[b.route ?? ""] ?? "Not shared yet"}</td><td className="px-4 py-3">{sellerStage(b)}</td><td className="px-4 py-3">{b.nda ? <Check size={16} className="text-c-green" aria-label="Signed" /> : <span className="text-muted-foreground">–</span>}</td><td className="px-4 py-3">{b.funds?.status === "verified" ? <span className="num font-medium text-c-green">{band(b.funds.verifiedUsd)}</span> : <span className="text-muted-foreground">{b.funds?.status === "submitted" ? "Checking" : "–"}</span>}</td><td className="num px-4 py-3">{b.cimViews ? `${b.cimViews} visit${b.cimViews === 1 ? "" : "s"}` : "–"}</td><td className="num px-4 py-3">{(b.offers ?? []).length || "–"}</td><td className="num px-4 py-3 text-muted-foreground">{b.updatedAt.slice(0, 10)}</td></tr>)}</tbody></table></div>
+      : <Empty title={live ? "No buyers yet" : "Buyers appear once you are live"} text={live ? "New listings usually see their first requests within a few days." : "Your advisor publishes the listing after review. Every request then shows up here."} />}</>;
+}

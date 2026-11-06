@@ -8,7 +8,12 @@ export type User = {
   id: string; email: string; name: string; roles: ("buyer" | "seller")[]; createdAt: string; lastLoginAt?: string; via?: "code" | "google"; photo?: string;
   phone?: string; company?: string; title?: string; location?: string; linkedin?: string; website?: string;
   buyer?: BuyerProfile; saved: string[]; onboarded?: boolean;
+  /** Which portal the account opens to. Buyers and sellers get separate dashboards. */
+  primary?: "buyer" | "seller"; searches?: SavedSearch[]; hidden?: string[];
 };
+export type SavedSearch = { id: string; name: string; q?: string; cat?: string; price?: string; sort?: string; alerts: boolean; at: string; sent?: string[] };
+/** The portal an account lands in. */
+export const portalOf = (u: Pick<User, "roles" | "primary">) => (u.primary ?? (u.roles.includes("seller") && !u.roles.includes("buyer") ? "seller" : "buyer")) === "seller" ? "/seller" : "/buyer";
 const key = () => process.env.SETTINGS_KEY || process.env.ADMIN_PASSWORD || "local-dev-secret";
 const COOKIE = "wb_user", DAYS = 30;
 const sign = (v: string) => createHmac("sha256", key()).update(`wb-user-v1:${v}`).digest("hex");
