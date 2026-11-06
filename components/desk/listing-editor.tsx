@@ -5,17 +5,18 @@ import { Plus, Trash2, Upload } from "lucide-react";
 import type { Listing } from "@/content/listings";
 import { Card } from "./shell";
 import { RoomEditor } from "./room-editor";
+import { ListingFacts } from "./listing-facts";
 
 const blank: Listing = { slug: "", title: "", headline: "", band: "under", category: "", status: "draft", askLabel: "", askUsd: null, metrics: [{ label: "", value: "" }], summary: "", highlights: [], body: [{ heading: "", text: "" }], gate: "after_review", floorUsd: null, idealBuyer: "any" };
 export function ListingEditor({ listing, hasCim, docs = [] }: { listing?: Listing; hasCim?: boolean; docs?: { id: string; name: string }[] }) {
   const router = useRouter();
   const [l, setL] = useState<Listing>(listing ?? blank);
-  const [hl, setHl] = useState((listing?.highlights ?? []).join("\n"));
+  const [hl, setHl] = useState((listing?.highlights ?? []).join("\n")); const [gr, setGr] = useState((listing?.growth ?? []).join("\n"));
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(""); const [err, setErr] = useState(""); const [cim, setCim] = useState(hasCim);
   const set = <K extends keyof Listing>(k: K, v: Listing[K]) => { setL({ ...l, [k]: v }); setMsg(""); };
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setErr(""); setMsg("");
-    const r = await fetch("/api/admin/listings/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...l, highlights: hl.split("\n").map((x) => x.trim()).filter(Boolean), metrics: l.metrics.filter((m) => m.label && m.value), body: l.body.filter((b) => b.text), room: l.room ? { ...l.room, financials: l.room.financials?.filter((f) => f.period.trim()), faq: l.room.faq?.filter((f) => f.q.trim().length >= 3 && f.a.trim()) } : undefined }) });
+    const r = await fetch("/api/admin/listings/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...l, highlights: hl.split("\n").map((x) => x.trim()).filter(Boolean), metrics: l.metrics.filter((m) => m.label && m.value), body: l.body.filter((b) => b.text), facts: (l.facts ?? []).filter((f) => f.label.trim() && f.value.trim()), growth: gr.split("\n").map((x) => x.trim()).filter(Boolean), room: l.room ? { ...l.room, financials: l.room.financials?.filter((f) => f.period.trim()), faq: l.room.faq?.filter((f) => f.q.trim().length >= 3 && f.a.trim()) } : undefined }) });
     const d = await r.json().catch(() => ({})); setBusy(false);
     if (!r.ok) return setErr(d.error ?? "Not saved.");
     if (!listing) router.push(`/admin/listings/${d.slug}/edit`); else { setMsg("Saved."); router.refresh(); }
@@ -33,6 +34,7 @@ export function ListingEditor({ listing, hasCim, docs = [] }: { listing?: Listin
         <Card title="Key figures" sub="Public, so show nothing that identifies the business." action={<button type="button" className="btn btn-ghost !min-h-8 !px-2 !text-sm" onClick={() => set("metrics", [...l.metrics, { label: "", value: "" }])}><Plus size={15} /> Add</button>}><div className="space-y-2">{l.metrics.map((m, i) => <div key={i} className="grid grid-cols-[1fr_1fr_40px] gap-2"><input aria-label="Figure label" id={`m-l-${i}`} placeholder="TTM revenue" className="input" value={m.label} onChange={(e) => set("metrics", l.metrics.map((x, n) => (n === i ? { ...x, label: e.target.value } : x)))} /><input aria-label="Figure value" id={`m-v-${i}`} placeholder="$1,200,000" className="input" value={m.value} onChange={(e) => set("metrics", l.metrics.map((x, n) => (n === i ? { ...x, value: e.target.value } : x)))} /><button type="button" aria-label="Remove figure" className="btn btn-ghost !px-2" onClick={() => set("metrics", l.metrics.filter((_, n) => n !== i))}><Trash2 size={15} /></button></div>)}</div></Card>
         <Card title="Description" action={<button type="button" className="btn btn-ghost !min-h-8 !px-2 !text-sm" onClick={() => set("body", [...l.body, { heading: "", text: "" }])}><Plus size={15} /> Add section</button>}><div className="space-y-4">{l.body.map((b, i) => <div key={i} className="space-y-2"><div className="grid grid-cols-[1fr_40px] gap-2"><input aria-label="Section heading" id={`b-h-${i}`} placeholder="Section heading" className="input" value={b.heading ?? ""} onChange={(e) => set("body", l.body.map((x, n) => (n === i ? { ...x, heading: e.target.value } : x)))} /><button type="button" aria-label="Remove section" className="btn btn-ghost !px-2" onClick={() => set("body", l.body.filter((_, n) => n !== i))}><Trash2 size={15} /></button></div><textarea aria-label="Section text" id={`b-t-${i}`} rows={4} className="input" value={b.text} onChange={(e) => set("body", l.body.map((x, n) => (n === i ? { ...x, text: e.target.value } : x)))} /></div>)}</div></Card>
         <Card title="Highlights" sub="One per line."><label className="sr-only" htmlFor="l-highlights">Highlights</label><textarea id="l-highlights" rows={5} className="input" value={hl} onChange={(e) => setHl(e.target.value)} /></Card>
+        <ListingFacts l={l} set={set} growth={gr} setGrowth={setGr} />
         <RoomEditor slug={listing?.slug} room={l.room ?? {}} onChange={(r) => set("room", r)} docs={docs} />
       </div>
       <div className="min-w-0 space-y-3 xl:sticky xl:top-6 xl:self-start">

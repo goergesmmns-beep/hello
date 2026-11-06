@@ -244,7 +244,7 @@ export async function trackDoc(b: Buyer, name: string) {
 }
 export async function roomDocs(slug: string) {
   const ids = await fileIds(`room:${slug}:`);
-  return (await Promise.all(ids.map(async (id) => { const f = await getFile(id); return f && { id: id.split(":")[2], name: f.name, at: f.createdAt }; }))).filter((x): x is { id: string; name: string; at: string } => !!x).sort((a, b) => a.at.localeCompare(b.at));
+  return (await Promise.all(ids.map(async (id) => { const f = await getFile(id); const [folder, name] = f ? (f.name.includes("::") ? f.name.split("::") : ["Other", f.name]) : []; return f && { id: id.split(":")[2], name: name!, folder: folder!, at: f.createdAt }; }))).filter((x): x is { id: string; name: string; folder: string; at: string } => !!x).sort((a, b) => a.at.localeCompare(b.at));
 }
 export async function askQuestion(b: Buyer, q: string) {
   const listing = (await findListing(b.listingSlug))!;

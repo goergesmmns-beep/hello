@@ -2,11 +2,19 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { type Listing, statusLabel } from "@/content/listings";
 
-export function PageHead({ eyebrow, title, lede, children }: { eyebrow: string; title: string; lede?: string; children?: React.ReactNode }) {
+/** Inner page header. Grid lines, drifting light, optional breadcrumb and a stat strip. */
+export function PageHead({ eyebrow, title, lede, children, stats, crumbs }: { eyebrow: string; title: string; lede?: string; children?: React.ReactNode; stats?: [string, string][]; crumbs?: [string, string][] }) {
   return (
-    <section className="dark relative overflow-hidden bg-background text-foreground">
+    <section className="dark relative isolate overflow-hidden bg-background text-foreground">
       <div className="aurora" aria-hidden><i /><i /></div>
-      <div className="wrap relative py-16 md:py-24"><p className="eyebrow mb-5 !text-brand">{eyebrow}</p><h1 className="rise max-w-5xl text-[clamp(2.5rem,6.6vw,5.5rem)] font-semibold leading-[1] tracking-[-.045em]">{title}</h1>{lede && <p className="lede mt-6">{lede}</p>}{children}</div>
+      <div aria-hidden className="grid-lines absolute inset-0 -z-10" />
+      <div className="wrap relative pb-14 pt-12 md:pb-20 md:pt-20">
+        {crumbs && <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">{crumbs.map(([h, l], i) => <span key={h} className="flex items-center gap-1.5">{i > 0 && <span aria-hidden>/</span>}<Link href={h} className="hover:text-foreground">{l}</Link></span>)}</nav>}
+        <p className="eyebrow mb-5 flex items-center gap-2 !text-brand"><span aria-hidden className="inline-block h-px w-6 bg-brand" />{eyebrow}</p>
+        <h1 className="rise max-w-5xl text-[clamp(2.4rem,6.4vw,5.5rem)] font-semibold leading-[1] tracking-[-.045em]">{title}</h1>
+        {lede && <p className="lede mt-6">{lede}</p>}{children}
+        {stats && <dl className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 md:mt-14 md:grid-cols-4">{stats.map(([v, l]) => <div key={l} className="bg-background/70 p-4 backdrop-blur md:p-5"><dt className="sr-only">{l}</dt><dd className="num text-2xl font-medium tracking-tight md:text-[32px]">{v}</dd><dd className="mt-1 text-[13px] leading-snug text-muted-foreground">{l}</dd></div>)}</dl>}
+      </div>
     </section>
   );
 }

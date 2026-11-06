@@ -128,7 +128,7 @@ export async function addNote(b: Buyer, content: string) {
 }
 export async function syncSubmission(kind: string, f: Record<string, string>) {
   const c = await config();
-  if (!c || !f.email || kind === "Newsletter") return;
+  if (!c || !f.email || kind === "Newsletter" || kind === "Deal alert") return;
   const made = await call<{ data: { id: number } }>(c, "POST", "/api/v2/persons", { name: f.name || f.email, emails: [{ value: f.email, label: "work", primary: true }] });
   const deal = await call<{ data: { id: number } }>(c, "POST", "/api/v2/deals", { title: `${kind}: ${f.company || f.name || f.email}`, person_id: made.data.id });
   await call(c, "POST", "/api/v1/notes", { content: Object.entries(f).map(([k, v]) => `${k}: ${v}`).join("<br>"), deal_id: deal.data.id });

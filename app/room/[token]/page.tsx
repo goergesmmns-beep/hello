@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowDownToLine, CalendarDays, Check, FileText, Lock, ShieldCheck } from "lucide-react";
 import { Wordmark } from "@/components/chrome";
-import { AskForm, InterestForm, RoomNav, RoomTracker } from "@/components/room";
+import { AskForm, DocIndex, InterestForm, RoomNav, RoomTracker } from "@/components/room";
 import { money } from "@/content/listings";
 import { findListing } from "@/lib/catalog";
 import { recordCimView, roomBuyer, roomDocs } from "@/lib/flow";
@@ -81,7 +81,7 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
             <p className="mt-5 whitespace-pre-line leading-relaxed text-muted-foreground">{r.structure ?? "Structure is open to discussion. Westbound Road works with buyers on cash, SBA, seller financing and earnout combinations, and can introduce lenders."}</p>
           </Section>
           <Section id="documents" n={at("documents")} title="Documents">
-            <ul className="divide-y rounded-xl border">{[{ id: "cim", name: "Confidential Information Memorandum", at: "" }, ...docs].map((d) => <li key={d.id}><a href={doc(d.id)} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-4 hover:bg-accent"><FileText size={20} className="shrink-0 text-brand-ink" /><span className="min-w-0 flex-1"><span className="block truncate font-medium">{d.name}</span><span className="text-xs text-muted-foreground">PDF · stamped with your email</span></span><ArrowDownToLine size={17} className="shrink-0 text-muted-foreground" /></a></li>)}</ul>
+            <DocIndex docs={[{ id: "cim", name: "Confidential Information Memorandum", folder: "Overview" }, ...docs].map((d) => ({ id: d.id, name: d.name, folder: d.folder, href: doc(d.id), viewed: !!b.room?.docs[d.id === "cim" ? "CIM" : d.name] }))} />
           </Section>
           <Section id="questions" n={at("questions")} title="Questions and answers">
             {(r.faq ?? []).length > 0 && <div className="mb-6 divide-y rounded-xl border">{r.faq!.map((f) => <details key={f.q} className="group p-4"><summary className="cursor-pointer list-none font-medium marker:hidden">{f.q}</summary><p className="mt-2 text-muted-foreground">{f.a}</p></details>)}</div>}

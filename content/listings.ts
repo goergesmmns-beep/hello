@@ -23,6 +23,12 @@ export type Listing = {
   /** Placeholder rule: 10% of asking. Marty sets the real figure per listing. */
   floorUsd: number | null;
   idealBuyer: "any" | "strategic";
+  /** Public fact sheet. Nothing that identifies the business. */
+  facts?: { label: string; value: string }[];
+  /** Public growth levers, one per line. */
+  growth?: string[];
+  /** Annual or TTM figures in USD, used for multiples on cards. Leave empty for partial years or other currencies. */
+  revenueUsd?: number; earningsUsd?: number;
   room?: Room;
 };
 
@@ -41,6 +47,9 @@ export const listings: Listing[] = [
       { heading: "How it runs", text: "Founded by serial entrepreneurs with 15+ years of combined experience, the company has stayed lean, asset-light and largely automated. Current ownership devotes only a modest number of hours per week, and growth has come primarily through organic referral." },
       { heading: "Room to grow", text: "Documented headroom includes live call transfers, web and lead-gen expansion, in-house media buying, additional insurance verticals, and a buyer base still under-penetrated relative to publisher supply." },
     ],
+    facts: [{ label: "Business model", value: "Pay-per-call lead generation" }, { label: "Location", value: "U.S., fully remote" }, { label: "Customers", value: "About 60 insurance buyers" }, { label: "Supply", value: "About 50 active publishers" }, { label: "Revenue base", value: "100% U.S." }, { label: "Owner time", value: "A modest number of hours per week" }],
+    growth: ["Live call transfers", "Web and lead-gen expansion", "In-house media buying", "Additional insurance verticals", "More buyers relative to publisher supply"],
+    revenueUsd: 5600000, earningsUsd: 633000,
     gate: "after_review", floorUsd: 210000, idealBuyer: "any",
     room: {
       financials: [{ period: "TTM", revenue: 5600000, sde: 633000 }],
@@ -57,6 +66,7 @@ export const listings: Listing[] = [
     summary: "Trusted by aspiring and professional artists worldwide for expert-led, video-based instruction in illustration, character design, digital painting and concept art.",
     highlights: ["76 courses taught by 51 industry professionals", "39,031 students served since launch", "4,658 active students in the last 90 days", "365,000+ social followers and 84,000+ email subscribers"],
     body: [{ heading: "The platform", text: "Its teachers include professionals from top animation and VFX studios, giving the brand real standing within the creative industry. A content library of 477 video episodes spans artist interviews, live drawing sessions and industry challenges." }],
+    facts: [{ label: "Business model", value: "Video courses and memberships" }, { label: "Catalog", value: "76 courses, 477 episodes" }, { label: "Instructors", value: "51 industry professionals" }, { label: "Students since launch", value: "39,031" }, { label: "Active students, 90 days", value: "4,658" }, { label: "Audience", value: "365K+ social, 84K+ email" }],
     gate: "after_review", floorUsd: 470000, idealBuyer: "any",
   },
   {
@@ -69,6 +79,8 @@ export const listings: Listing[] = [
     summary: "Established digital media platform serving carbon markets, sustainability, clean energy, critical minerals and energy transition sectors.",
     highlights: ["Nearly 50,000 email subscribers", "Visitors from 247 countries", "Lean operating structure", "Engaged audience of investors, executives and policymakers"],
     body: [{ heading: "The platform", text: "The business delivers industry news, market intelligence, sponsored content and thought leadership, and has built a significant position within a specialized global market." }],
+    facts: [{ label: "Business model", value: "Sponsored content and market intelligence" }, { label: "Email subscribers", value: "Nearly 50,000" }, { label: "Reach", value: "Visitors from 247 countries" }, { label: "Audience", value: "Investors, executives, policymakers" }],
+    revenueUsd: 560000,
     gate: "after_review", floorUsd: null, idealBuyer: "any",
   },
   {
@@ -81,6 +93,8 @@ export const listings: Listing[] = [
     summary: "A fast-growing, profitable platform that combines a specialized CRM with full-service digital marketing for public charter schools.",
     highlights: ["Strong recurring revenue", "High customer retention", "Lean operational footprint", "Foothold in a $20B+ school recruitment market"],
     body: [{ heading: "The business", text: "Launched in 2022 as a spinoff from a successful digital agency, it now serves 18 school networks across the U.S. The founders are seeking an acquisition partner who can take it to the next level." }],
+    facts: [{ label: "Business model", value: "SaaS CRM plus marketing services" }, { label: "Launched", value: "2022" }, { label: "Customers", value: "18 charter school networks" }, { label: "Market", value: "U.S. school enrollment" }],
+    revenueUsd: 602685,
     gate: "after_review", floorUsd: 120000, idealBuyer: "any",
   },
   {
@@ -97,6 +111,8 @@ export const listings: Listing[] = [
       { heading: "The opportunity", text: "A company in licensed merchandise, sporting goods, grilling, gifting or wholesale could eliminate redundant overhead, improve purchasing and introduce the products to its existing customers." },
       { heading: "Transition", text: "The sellers are open to creative structures including a full acquisition, earn-outs, retained equity, royalty agreements or equity participation, and to meaningful post-transition support." },
     ],
+    facts: [{ label: "Business model", value: "Licensed consumer products" }, { label: "Licensing", value: "Official MLB and MiLB" }, { label: "IP", value: "Six U.S. design patents" }, { label: "Channels", value: "About 30 retail and distribution partners" }, { label: "Email list", value: "About 23,000" }, { label: "Best suited to", value: "Strategic acquirer" }],
+    revenueUsd: 644466,
     gate: "after_review", floorUsd: 89500, idealBuyer: "strategic",
   },
   {
@@ -109,6 +125,7 @@ export const listings: Listing[] = [
     summary: "Most AI content tools help users write. This platform helps them decide what to write.",
     highlights: ["Proprietary SaaS platform", "Monitors news, newsletters, RSS, video and social conversations", "Turns insights into ready-to-publish content", "Content tailored to each user's voice"],
     body: [{ heading: "The platform", text: "Rather than relying on users to start with a blank prompt, the software continuously identifies the stories and topics audiences already engage with, then transforms them into marketing content, social posts, articles and thought leadership." }],
+    facts: [{ label: "Business model", value: "SaaS subscription" }, { label: "Product", value: "Content intelligence and generation" }, { label: "Sources monitored", value: "News, newsletters, RSS, video, social" }],
     gate: "after_nda", floorUsd: 12000, idealBuyer: "any",
   },
   {
@@ -121,6 +138,8 @@ export const listings: Listing[] = [
     summary: "Eight direct-to-consumer brands across six categories, distributed through a national affiliate network and offered with no inventory to carry.",
     highlights: ["Product fulfilled on demand", "Hundreds of affiliate partners", "All accounts transfer to the buyer", "No minimum order commitments"],
     body: [{ heading: "The portfolio", text: "A buyer's capital goes toward growth instead of goods. Distribution is actively managed through a quarterly partner audit, a partner gifting program and white-glove service for top producers." }],
+    facts: [{ label: "Business model", value: "DTC brands via affiliates" }, { label: "Brands", value: "8 across 6 categories" }, { label: "Inventory", value: "None, fulfilled on demand" }, { label: "Product margins", value: "93%" }],
+    revenueUsd: 1042232,
     gate: "after_review", floorUsd: 79500, idealBuyer: "any",
   },
   {
@@ -133,6 +152,7 @@ export const listings: Listing[] = [
     summary: "Illustrated storybooks that begin in English and gradually transition into a second language, sold as physical story boxes or digital books with an app.",
     highlights: ["Subscription-based recurring revenue", "Physical and digital formats", "Inventory included in the sale", "Learning through context rather than memorization"],
     body: [{ heading: "The product", text: "Children absorb vocabulary and sentence structure naturally. The result feels like a bedtime story, but functions as a structured language-learning experience." }],
+    facts: [{ label: "Business model", value: "Subscription boxes and digital app" }, { label: "Formats", value: "Physical and digital" }, { label: "Inventory included", value: "$733,000 MSRP" }],
     gate: "after_review", floorUsd: 19500, idealBuyer: "any",
   },
 ];
@@ -140,3 +160,6 @@ export const listings: Listing[] = [
 export const getListing = (slug: string) => listings.find((l) => l.slug === slug);
 export const statusLabel = { available: "Available", offers: "Accepting offers", pending: "Sale pending", sold: "Sold", draft: "Hidden" } as const;
 export const money = (n: number) => "$" + n.toLocaleString("en-US");
+export const compact = (n: number) => (n >= 1e6 ? `$${(n / 1e6).toFixed(n >= 1e7 ? 1 : 2).replace(/\.?0+$/, "")}M` : n >= 1e3 ? `$${Math.round(n / 1e3)}K` : `$${n}`);
+/** Asking price over earnings or revenue, only when both are known in USD. */
+export const multiples = (l: Listing) => ({ earnings: l.askUsd && l.earningsUsd ? l.askUsd / l.earningsUsd : null, revenue: l.askUsd && l.revenueUsd ? l.askUsd / l.revenueUsd : null });

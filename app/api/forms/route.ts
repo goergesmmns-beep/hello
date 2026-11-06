@@ -6,7 +6,7 @@ import { notifyAdvisors } from "@/lib/mail";
 import { syncSubmission } from "@/lib/pipedrive";
 import { saveSubmission } from "@/lib/store";
 
-const schema = z.object({ kind: z.enum(["Contact", "Seller inquiry", "Valuation request", "Newsletter"]), fields: z.record(z.string(), z.string().max(5000)) });
+const schema = z.object({ kind: z.enum(["Contact", "Seller inquiry", "Valuation request", "Newsletter", "Deal alert"]), fields: z.record(z.string(), z.string().max(5000)) });
 export async function POST(req: Request) {
   const stop = await limited(`forms:${clientIp(req)}`, 15, 3600);
   if (stop) return stop;

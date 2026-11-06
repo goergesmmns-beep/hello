@@ -59,3 +59,16 @@ export function InterestForm({ token, v, ask }: { token: string; v: string; ask:
     <p className="text-xs text-muted-foreground">Non-binding. It tells the advisor you are serious and starts the LOI conversation.</p>
   </form>;
 }
+
+type D = { id: string; name: string; folder: string; href: string; viewed: boolean };
+const order = ["Overview", "Financials", "Operations", "Customers", "Legal", "Other"];
+/** Numbered data room index with search and viewed status, like a VDR. */
+export function DocIndex({ docs }: { docs: D[] }) {
+  const [s, setS] = useState(""); const q = s.toLowerCase().trim();
+  const groups = order.map((f) => [f, docs.filter((d) => d.folder === f && (!q || d.name.toLowerCase().includes(q)))] as const).filter(([, d]) => d.length);
+  const seen = docs.filter((d) => d.viewed).length;
+  return <div>
+    <div className="mb-3 flex flex-wrap items-center gap-3"><label className="relative min-w-0 flex-1"><span className="sr-only">Search documents</span><svg aria-hidden viewBox="0 0 24 24" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg><input id="doc-search" value={s} onChange={(e) => setS(e.target.value)} placeholder="Search documents" className="input !min-h-10 !py-1.5 !pl-9 !text-[15px]" /></label><span className="num text-sm text-muted-foreground">{seen} of {docs.length} viewed</span></div>
+    {groups.length ? <div className="overflow-hidden rounded-xl border">{groups.map(([f, list]) => { const n = order.indexOf(f) + 1; return <div key={f}><p className="flex items-center gap-2 border-b bg-muted/60 px-4 py-2 text-sm font-semibold"><span className="num text-brand-ink">{n}.0</span>{f}<span className="num ml-auto text-xs font-normal text-muted-foreground">{list.length}</span></p><ul className="divide-y border-b last:border-b-0">{list.map((d, i) => <li key={d.id}><a href={d.href} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3 hover:bg-accent"><span className="num w-9 shrink-0 text-xs text-muted-foreground">{n}.{i + 1}</span><span className="min-w-0 flex-1"><span className="block truncate font-medium">{d.name}</span><span className="text-xs text-muted-foreground">PDF · stamped with your email, IP and time</span></span>{d.viewed ? <span className="shrink-0 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">Viewed</span> : <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-foreground">New</span>}</a></li>)}</ul></div>; })}</div> : <p className="rounded-xl border p-6 text-center text-muted-foreground">No documents match.</p>}
+  </div>;
+}

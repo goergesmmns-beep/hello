@@ -11,8 +11,13 @@ import { ago, analyze, hoursSince } from "@/lib/analytics";
 import { allBuyers, allSubmissions } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
-function Kpi({ label, value, note, hot }: { label: string; value: string | number; note?: string; hot?: boolean }) {
-  return <div className={`rounded-xl border bg-card p-4 ${hot ? "gborder" : ""}`}><p className="text-[13px] text-muted-foreground">{label}</p><p className={`num mt-1.5 text-[32px] font-medium leading-none ${hot ? "text-brand" : ""}`}>{value}</p>{note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}</div>;
+/** 14-day trend line under a stat. */
+function Spark({ data }: { data: number[] }) {
+  const max = Math.max(1, ...data); const pts = data.map((v, i) => `${(i / (data.length - 1)) * 100},${22 - (v / max) * 20}`).join(" ");
+  return <svg viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden className="mt-3 h-6 w-full overflow-visible"><polyline points={`0,24 ${pts} 100,24`} className="fill-brand/15" /><polyline points={pts} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" className="stroke-brand" /></svg>;
+}
+function Kpi({ label, value, note, hot, trend }: { label: string; value: string | number; note?: string; hot?: boolean; trend?: number[] }) {
+  return <div className={`rounded-xl border bg-card p-4 ${hot ? "gborder" : ""}`}><p className="text-[13px] text-muted-foreground">{label}</p><p className={`num mt-1.5 text-[32px] font-medium leading-none ${hot ? "text-brand" : ""}`}>{value}</p>{note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}{trend && <Spark data={trend} />}</div>;
 }
 const time = (h: number | null) => (h === null ? "No data" : h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${h.toFixed(1)} hrs` : `${(h / 24).toFixed(1)} days`);
 export default async function Overview() {
@@ -24,6 +29,9 @@ export default async function Overview() {
   const due = a.buyers.flatMap((b) => (b.tasks ?? []).filter((t) => !t.done && t.due && t.due <= today).map((t) => ({ ...t, buyerId: b.id, name: b.name }))).slice(0, 6);
   const live = a.buyers.flatMap((b) => b.offers ?? []).filter((o) => ["Submitted", "Countered", "Accepted"].includes(o.status));
   const open = a.buyers.flatMap((b) => (b.questions ?? []).filter((q) => !q.a).map((q) => ({ ...q, buyerId: b.id, name: b.name }))).slice(0, 5);
+  const days = Array.from({ length: 14 }, (_, i) => new Date(Date.now() - (13 - i) * 864e5).toISOString().slice(0, 10));
+  const daily = (dates: (string | undefined)[]) => days.map((d) => dates.filter((x) => x?.slice(0, 10) === d).length);
+  const tBuyers = daily(a.buyers.map((b) => b.createdAt)), tNdas = daily(a.buyers.map((b) => b.nda?.signedAt)), tCims = daily(a.buyers.flatMap((b) => b.events.filter((e) => e.type === "cim").map((e) => e.at))), tCalls = daily(a.buyers.flatMap((b) => b.events.filter((e) => e.type === "call").map((e) => e.at)));
   const fundsWaiting = a.buyers.filter((b) => b.funds?.status === "submitted").length;
   const issues = all.filter((b) => b.events.some((e) => e.type === "crm_error" || e.type === "mail_error")).length;
   return (<>
@@ -31,10 +39,10 @@ export default async function Overview() {
     {issues > 0 && <p role="alert" className="mb-4 flex items-center gap-2 rounded-md border border-destructive/60 p-3 text-sm"><AlertCircle size={17} className="text-destructive" />{issues} {issues === 1 ? "buyer has" : "buyers have"} a failed CRM or email step. Open <Link className="underline" href="/admin/activity">Activity</Link> to see why.</p>}
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
       <Kpi label="Waiting for review" value={k.review} hot={k.review > 0} note={k.oldestReview ? `Oldest ${ago(k.oldestReview)}` : "Queue is clear"} />
-      <Kpi label="Total buyers" value={k.total} note={`${k.newWeek} new in 7 days`} />
-      <Kpi label="NDAs signed" value={k.ndas} note={`${k.ndaRate}% of buyers`} />
-      <Kpi label="CIMs released" value={k.cims} note={`Median ${time(k.medianToCim)}`} />
-      <Kpi label="Calls requested" value={k.calls} note="Includes strategy sessions" />
+      <Kpi trend={tBuyers} label="Total buyers" value={k.total} note={`${k.newWeek} new in 7 days`} />
+      <Kpi trend={tNdas} label="NDAs signed" value={k.ndas} note={`${k.ndaRate}% of buyers`} />
+      <Kpi trend={tCims} label="CIMs released" value={k.cims} note={`Median ${time(k.medianToCim)}`} />
+      <Kpi trend={tCalls} label="Calls requested" value={k.calls} note="Includes strategy sessions" />
       <Kpi label="Funds to verify" value={fundsWaiting} hot={fundsWaiting > 0} note="Proof of funds queue" />
     </div>
     <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">

@@ -3,7 +3,12 @@ import { getSetting, setSetting } from "./store";
 
 /** Listings live in the database once edited. Until then, and if the database is unreachable, the starter list is used. */
 export async function catalog(): Promise<Listing[]> {
-  try { return (await getSetting<Listing[]>("catalog")) ?? seed; } catch { return seed; }
+  try {
+    const saved = await getSetting<Listing[]>("catalog");
+    if (!saved) return seed;
+    // Listings saved before a field existed pick it up from the starter copy.
+    return saved.map((l) => { const d = seed.find((x) => x.slug === l.slug); return d ? { facts: d.facts, growth: d.growth, revenueUsd: d.revenueUsd, earningsUsd: d.earningsUsd, room: d.room, ...l } : l; });
+  } catch { return seed; }
 }
 export const isOpen = (l: Listing) => l.status === "available" || l.status === "offers";
 export const isPublic = (l: Listing) => l.status !== "draft" && l.status !== "sold";

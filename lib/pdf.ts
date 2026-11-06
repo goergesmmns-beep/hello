@@ -38,7 +38,7 @@ export async function signedNdaPdf(input: { name: string; email: string; listing
 }
 
 /** Returns the listing's CIM with the buyer's email and date on every page. */
-export async function watermarkedCim(listing: Listing, email: string) {
+export async function watermarkedCim(listing: Listing, email: string, ip = "") {
   const file = path.join(process.cwd(), "private", "cims", `${listing.slug}.pdf`);
   let doc: PDFDocument;
   try {
@@ -51,18 +51,20 @@ export async function watermarkedCim(listing: Listing, email: string) {
     page.drawText(latin(listing.title), { x: 56, y: 700, size: 20, font: f, maxWidth: 500 });
     page.drawText("Sample page. The real CIM has not been added yet.", { x: 56, y: 640, size: 13, font: f });
   }
-  return stampPdf(doc, email);
+  return stampPdf(doc, email, ip);
 }
 /** Stamps the buyer's email across every page of any PDF. */
-export async function watermarkBytes(bytes: Uint8Array, email: string) { return stampPdf(await PDFDocument.load(bytes), email); }
-async function stampPdf(doc: PDFDocument, email: string) {
+export async function watermarkBytes(bytes: Uint8Array, email: string, ip = "") { return stampPdf(await PDFDocument.load(bytes), email, ip); }
+async function stampPdf(doc: PDFDocument, email: string, ip: string) {
   const font = await doc.embedFont(StandardFonts.Helvetica);
+  const foot = latin(`Prepared for ${email}${ip ? ` from ${ip}` : ""} at ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC. Confidential under NDA. Westbound Road.`);
   const stamp = `${latin(email)}  -  ${new Date().toISOString().slice(0, 10)}  -  Confidential`;
   for (const p of doc.getPages()) {
     const { width, height } = p.getSize();
     for (let i = 0; i < 4; i++) {
       p.drawText(stamp, { x: width * 0.08, y: height * (0.12 + i * 0.24), size: 15, font, rotate: degrees(32), color: rgb(0.32, 0.32, 0.32), opacity: 0.34 });
     }
+    p.drawText(foot, { x: 24, y: 12, size: 7, font, color: rgb(0.35, 0.35, 0.35), maxWidth: width - 48 });
   }
   return doc.save();
 }

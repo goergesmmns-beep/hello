@@ -2,6 +2,7 @@ import { findListing } from "@/lib/catalog";
 import { roomBuyer, trackDoc } from "@/lib/flow";
 import { watermarkBytes, watermarkedCim } from "@/lib/pdf";
 import { getFile } from "@/lib/store";
+import { clientIp } from "@/lib/limit";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string; id: string }> }) {
   const { token, id } = await params;
@@ -9,11 +10,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   if (!b) return new Response("Not available", { status: 403 });
   const l = (await findListing(b.listingSlug))!;
   let bytes: Uint8Array, name: string;
-  if (id === "cim") { bytes = await watermarkedCim(l, b.email); name = "CIM"; }
+  if (id === "cim") { bytes = await watermarkedCim(l, b.email, clientIp(req)); name = "CIM"; }
   else {
     const f = /^[0-9a-f-]{36}$/.test(id) ? await getFile(`room:${l.slug}:${id}`) : null;
     if (!f) return new Response("Not found", { status: 404 });
-    bytes = await watermarkBytes(f.bytes, b.email); name = f.name;
+    bytes = await watermarkBytes(f.bytes, b.email, clientIp(req)); name = f.name.split("::").pop()!;
   }
   await trackDoc(b, name);
   return new Response(Buffer.from(bytes), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${name.replace(/[^\w .-]/g, "")}${name.endsWith(".pdf") ? "" : ".pdf"}"`, "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } });
