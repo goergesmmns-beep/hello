@@ -2,11 +2,18 @@ export type Stage = "inquiry" | "nda" | "capacity" | "review" | "cim" | "call" |
 export type Route = "own" | "company" | "letter" | "financing";
 export const stageLabels: Record<Stage, string> = { inquiry: "New inquiry", nda: "NDA signed", capacity: "Capacity check", review: "Advisor review", cim: "CIM open", call: "Call requested", warm: "Keep warm" };
 export type BuyerEvent = { at: string; type: string; detail: string };
+export type FundsStatus = "submitted" | "verified" | "more" | "declined";
+export type FundsDoc = { fileId: string; name: string; at: string };
+export type Funds = { docType?: string; statedUsd?: number; docDate?: string; docs: FundsDoc[]; status?: FundsStatus; note?: string; verifiedUsd?: number; verifiedAt?: string; expiresAt?: string; submittedAt?: string };
+export type OfferStatus = "Draft" | "Submitted" | "Countered" | "Accepted" | "Declined" | "Withdrawn";
+export type Offer = { id: string; at: string; amountUsd: number; cashUsd?: number; sellerNoteUsd?: number; earnoutUsd?: number; status: OfferStatus; notes?: string };
+export type Task = { id: string; text: string; due?: string; done?: boolean; at: string };
 export type Buyer = {
   id: string; token: string; verifyCode: string; listingSlug: string; source: string;
   name: string; email: string; phone?: string; company?: string; message?: string;
   linkedin?: string; website?: string; why?: string; route?: Route; stage: Stage;
-  nda?: { signedName: string; signedAt: string; ip: string; userAgent: string; version: string; fileId: string };
+  nda?: { signedName: string; signedAt: string; ip: string; userAgent: string; version: string; fileId: string; method?: "typed" | "drawn"; hash?: string };
+  funds?: Funds; offers?: Offer[]; tasks?: Task[];
   capacity?: { fileId?: string; fileName?: string; plan?: string; role?: string; acquisitions?: string; competitor?: string; notes?: string; submittedAt: string };
   pipedrive?: { personId?: number; dealId?: number };
   cimViews: number; notes?: { at: string; text: string }[]; archived?: boolean; reminders?: Record<string, string>; remindersOff?: boolean; createdAt: string; updatedAt: string; events: BuyerEvent[];

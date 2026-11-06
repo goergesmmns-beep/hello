@@ -15,6 +15,10 @@ const count = <T,>(items: T[], key: (t: T) => string | undefined) => {
   items.forEach((i) => { const k = key(i); if (k) m.set(k, (m.get(k) ?? 0) + 1); });
   return [...m.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 };
+export const readiness = (b: Buyer) => {
+  const items: [string, number, boolean][] = [["Profile with LinkedIn or website", 15, !!(b.why && (b.linkedin || b.website))], ["NDA signed", 20, !!b.nda], ["Funds verified", 30, b.funds?.status === "verified"], ["CIM opened", 15, b.cimViews > 0], ["Call requested", 10, reached(b, "call")], ["Offer logged", 10, (b.offers ?? []).length > 0]];
+  return { score: items.reduce((s, [, p, ok]) => s + (ok ? p : 0), 0), items };
+};
 export const routeLabels: Record<string, string> = { own: "Own capital", company: "Strategic", letter: "Bank or lender letter", financing: "Financing" };
 
 export function analyze(all: Buyer[], subs: Submission[], listings: Listing[]) {

@@ -1,12 +1,12 @@
-import { randomBytes, randomUUID } from "crypto";
+import { createHash, randomBytes, randomUUID } from "crypto";
 import { findListing, isOpen } from "./catalog";
 import { nda } from "@/content/nda";
-import { signedNdaPdf } from "./pdf";
+import { ndaText, signedNdaPdf } from "./pdf";
 import { addNote, syncBuyer } from "./pipedrive";
 import { notifyAdvisors, sendMail, siteUrl } from "./mail";
 import { ruleFor } from "./rules";
 import { buyerByEmail, buyerById, buyerByToken, saveBuyer, saveFile } from "./store";
-import type { Buyer, Route, Stage } from "./types";
+import type { Buyer, Offer, OfferStatus, Route, Stage } from "./types";
 
 const log = (b: Buyer, type: string, detail: string) => b.events.unshift({ at: new Date().toISOString(), type, detail });
 
@@ -49,21 +49,94 @@ export async function saveProfile(token: string, p: { name: string; linkedin?: s
   await commit(b, `Buyer route: ${p.route}. LinkedIn: ${p.linkedin || "not given"}. Website: ${p.website || "not given"}. Why: ${p.why}`);
   return b;
 }
-export async function signNda(token: string, s: { signedName: string; ip: string; userAgent: string }) {
+export async function signNda(token: string, s: { signedName: string; ip: string; userAgent: string; signature?: Uint8Array }) {
   const b = await need(token);
   if (b.nda) return b;
   if (!b.why || !b.route) throw new Error("Complete your profile first.");
   const at = new Date().toISOString();
   const listing = (await findListing(b.listingSlug))!;
-  const bytes = await signedNdaPdf({ name: s.signedName, email: b.email, listing: listing.title, at, ip: s.ip, userAgent: s.userAgent });
+  const hash = createHash("sha256").update(`${nda.version}\n${listing.title}\n${ndaText()}\n${s.signedName}\n${b.email}\n${at}`).digest("hex");
+  const bytes = await signedNdaPdf({ name: s.signedName, email: b.email, listing: listing.title, at, ip: s.ip, userAgent: s.userAgent, hash, signature: s.signature });
   const fileId = randomUUID();
   await saveFile({ id: fileId, kind: "nda", buyerId: b.id, name: `NDA-${b.name}.pdf`, mime: "application/pdf", bytes, createdAt: at });
-  b.nda = { signedName: s.signedName, signedAt: at, ip: s.ip, userAgent: s.userAgent, version: nda.version, fileId };
+  b.nda = { signedName: s.signedName, signedAt: at, ip: s.ip, userAgent: s.userAgent, version: nda.version, fileId, method: s.signature ? "drawn" : "typed", hash };
   b.stage = "capacity";
   log(b, "nda", `NDA signed by ${s.signedName}`);
   if ((await ruleFor(listing)).gate === "after_nda") { await openCim(b, "Listing rule: CIM opens after NDA"); return b; }
   await commit(b, `NDA signed by ${s.signedName} on ${at}`);
   return b;
+}
+const MAX_DOCS = 5;
+export async function addFundsDoc(token: string, file: { name: string; mime: string; bytes: Uint8Array }) {
+  const b = await need(token);
+  if (!b.nda) throw new Error("Sign the NDA first.");
+  const f = b.funds ?? { docs: [] };
+  if (f.docs.length >= MAX_DOCS) throw new Error(`You can add up to ${MAX_DOCS} documents.`);
+  const at = new Date().toISOString(), fileId = randomUUID();
+  await saveFile({ id: fileId, kind: "capacity", buyerId: b.id, name: file.name, mime: file.mime, bytes: file.bytes, createdAt: at });
+  b.funds = { ...f, docs: [...f.docs, { fileId, name: file.name, at }] };
+  await saveBuyer(b);
+  return b;
+}
+export async function submitFunds(token: string, i: { docType: string; statedUsd?: number; docDate?: string }) {
+  const b = await need(token);
+  if (!b.funds?.docs.length) throw new Error("Add at least one document.");
+  const listing = (await findListing(b.listingSlug))!;
+  b.funds = { ...b.funds, ...i, status: "submitted", note: undefined, submittedAt: new Date().toISOString() };
+  b.stage = "review"; log(b, "funds", `Proof of funds submitted: ${i.docType}`);
+  await safely(() => notifyAdvisors(`Proof of funds to review: ${b.name}, ${listing.title}`, `${siteUrl()}/admin/buyers/${b.id}`), b);
+  await commit(b, "Proof of funds submitted. Documents are on the secure site.");
+  return b;
+}
+export async function verifyFunds(id: string, amount: number, release: boolean) {
+  const b = await buyerById(id);
+  if (!b?.funds) throw new Error("No proof of funds on this buyer.");
+  const at = new Date();
+  b.funds = { ...b.funds, status: "verified", verifiedUsd: amount, verifiedAt: at.toISOString(), expiresAt: new Date(at.getTime() + 90 * 864e5).toISOString(), note: undefined };
+  log(b, "funds_ok", "Advisor verified proof of funds");
+  if (release) { await openCim(b, "CIM released after funds were verified"); return b; }
+  await commit(b, "Proof of funds verified");
+  return b;
+}
+export async function requestMoreFunds(id: string, note: string) {
+  const b = await buyerById(id);
+  if (!b?.funds) throw new Error("No proof of funds on this buyer.");
+  const listing = (await findListing(b.listingSlug))!;
+  b.funds = { ...b.funds, status: "more", note }; b.stage = "capacity";
+  log(b, "funds_more", "Advisor asked for more proof of funds");
+  await safely(() => sendMail(b.email, `More information needed for ${listing.title}`, `Hi ${b.name.split(" ")[0]},\n\nAn advisor reviewed your proof of funds and needs the following:\n\n${note}\n\nAdd it here:\n${buyerLink(b)}\n\nWestbound Road`), b);
+  await commit(b, "Advisor asked for more proof of funds");
+  return b;
+}
+export async function declineFunds(id: string) {
+  const b = await buyerById(id);
+  if (!b?.funds) throw new Error("No proof of funds on this buyer.");
+  b.funds = { ...b.funds, status: "declined" };
+  await saveBuyer(b);
+  return keepWarm(id, "advisor");
+}
+export async function addOffer(id: string, o: Omit<Offer, "id" | "at">) {
+  const b = await buyerById(id); if (!b) throw new Error("Buyer not found");
+  b.offers = [{ ...o, id: randomUUID(), at: new Date().toISOString() }, ...(b.offers ?? [])];
+  log(b, "offer", `Offer logged: $${o.amountUsd.toLocaleString("en-US")}, ${o.status}`);
+  await commit(b, `Offer logged: $${o.amountUsd.toLocaleString("en-US")}, ${o.status}`);
+  return b;
+}
+export async function setOfferStatus(id: string, offerId: string, status: OfferStatus) {
+  const b = await buyerById(id); if (!b) throw new Error("Buyer not found");
+  b.offers = (b.offers ?? []).map((o) => (o.id === offerId ? { ...o, status } : o));
+  log(b, "offer", `Offer marked ${status}`); await commit(b, `Offer marked ${status}`);
+  return b;
+}
+export async function addTask(id: string, text: string, due?: string) {
+  const b = await buyerById(id); if (!b) throw new Error("Buyer not found");
+  b.tasks = [{ id: randomUUID(), text, due, at: new Date().toISOString() }, ...(b.tasks ?? [])];
+  await saveBuyer(b); return b;
+}
+export async function toggleTask(id: string, taskId: string) {
+  const b = await buyerById(id); if (!b) throw new Error("Buyer not found");
+  b.tasks = (b.tasks ?? []).map((t) => (t.id === taskId ? { ...t, done: !t.done } : t));
+  await saveBuyer(b); return b;
 }
 export async function submitCapacity(token: string, c: { plan?: string; role?: string; acquisitions?: string; competitor?: string; notes?: string; file?: { name: string; mime: string; bytes: Uint8Array } }) {
   const b = await need(token);
@@ -160,5 +233,5 @@ async function need(token: string) {
 }
 /** What the buyer's browser may see. Never includes verifyCode or CRM data. */
 export function publicBuyer(b: Buyer) {
-  return { name: b.name, email: b.email, linkedin: b.linkedin, website: b.website, why: b.why, route: b.route, stage: b.stage as Stage, ndaSigned: !!b.nda, ndaSignedAt: b.nda?.signedAt };
+  return { name: b.name, email: b.email, linkedin: b.linkedin, website: b.website, why: b.why, route: b.route, stage: b.stage as Stage, ndaSigned: !!b.nda, ndaSignedAt: b.nda?.signedAt, funds: b.funds ? { status: b.funds.status, note: b.funds.note, docs: b.funds.docs.map((d) => d.name) } : undefined };
 }

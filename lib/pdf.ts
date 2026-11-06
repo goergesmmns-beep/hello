@@ -15,18 +15,25 @@ function wrap(text: string, max: number) {
 }
 const latin = (s: string) => s.replace(/[^\x20-\x7E]/g, "-");
 
-export async function signedNdaPdf(input: { name: string; email: string; listing: string; at: string; ip: string; userAgent: string }) {
+export const ndaText = () => nda.clauses.map(([h, b]) => `${h}: ${b}`).join("\n");
+export async function signedNdaPdf(input: { name: string; email: string; listing: string; at: string; ip: string; userAgent: string; hash: string; signature?: Uint8Array }) {
   const doc = await PDFDocument.create();
   const page = doc.addPage([612, 792]);
   const reg = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const ital = await doc.embedFont(StandardFonts.TimesRomanItalic);
   let y = 730;
   const put = (t: string, size = 11, f = reg) => { page.drawText(latin(t), { x: 56, y, size, font: f }); y -= size + 6; };
   put(nda.title, 20, bold); put(`Listing: ${input.listing}`); y -= 8;
   for (const [h, b] of nda.clauses) { put(h, 11, bold); wrap(b, 90).forEach((l) => put(l, 10.5)); y -= 6; }
-  y -= 10; put("Electronic signature record", 12, bold);
-  put(`Signed by: ${input.name}`); put(`Email: ${input.email}`); put(`Signed at (UTC): ${input.at}`);
-  put(`IP address: ${input.ip}`); wrap(`Device: ${input.userAgent}`, 90).forEach((l) => put(l, 9)); put(`NDA version: ${nda.version}`, 9);
+  y -= 8; put("Signature", 12, bold);
+  if (input.signature) { const img = await doc.embedPng(input.signature); const s = img.scaleToFit(220, 64); page.drawImage(img, { x: 56, y: y - s.height + 10, width: s.width, height: s.height }); y -= s.height + 2; }
+  else { page.drawText(latin(input.name), { x: 56, y: y - 16, size: 26, font: ital }); y -= 34; }
+  page.drawLine({ start: { x: 56, y }, end: { x: 300, y }, thickness: .6 }); y -= 22;
+  put("Electronic signature record", 12, bold);
+  put(`Signed by: ${input.name}`, 10); put(`Email: ${input.email}`, 10); put(`Signed at (UTC): ${input.at}`, 10);
+  put(`IP address: ${input.ip}`, 10); wrap(`Device: ${input.userAgent}`, 100).forEach((l) => put(l, 8.5));
+  put(`NDA version: ${nda.version}`, 9); put(`Document fingerprint (SHA-256): ${input.hash}`, 7.5);
   return doc.save();
 }
 

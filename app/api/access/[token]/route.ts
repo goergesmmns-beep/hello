@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { limited } from "@/lib/limit";
-import { stopReminders, publicBuyer, requestCall, saveProfile, signNda, submitCapacity } from "@/lib/flow";
+import { submitFunds, stopReminders, publicBuyer, requestCall, saveProfile, signNda, submitCapacity } from "@/lib/flow";
 
 type C = { params: Promise<{ token: string }> };
 const MAX = 4 * 1024 * 1024;
 const types = ["application/pdf", "image/png", "image/jpeg"];
 const profile = z.object({ action: z.literal("profile"), name: z.string().min(2).max(120), linkedin: z.string().max(200).optional(), website: z.string().max(200).optional(), why: z.string().min(10).max(1500), route: z.enum(["own", "company", "letter", "financing"]) });
-const sign = z.object({ action: z.literal("sign"), signedName: z.string().min(2).max(120), agree: z.literal(true) });
+const sign = z.object({ action: z.literal("sign"), signedName: z.string().min(2).max(120), agree: z.literal(true), signature: z.string().max(300000).regex(/^data:image\/png;base64,/).optional() });
+const funds = z.object({ action: z.literal("funds"), docType: z.string().min(2).max(60), statedUsd: z.number().int().positive().optional(), docDate: z.string().max(10).optional() });
 
 export async function POST(req: Request, { params }: C) {
   const { token } = await params;
@@ -32,8 +33,9 @@ export async function POST(req: Request, { params }: C) {
     if (body.action === "sign") {
       const s = sign.parse(body);
       const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
-      return NextResponse.json(publicBuyer(await signNda(token, { signedName: s.signedName, ip, userAgent: req.headers.get("user-agent") ?? "unknown" })));
+      return NextResponse.json(publicBuyer(await signNda(token, { signedName: s.signedName, ip, userAgent: req.headers.get("user-agent") ?? "unknown", signature: s.signature ? new Uint8Array(Buffer.from(s.signature.split(",")[1], "base64")) : undefined })));
     }
+    if (body.action === "funds") { const { action, ...f } = funds.parse(body); void action; return NextResponse.json(publicBuyer(await submitFunds(token, f))); }
     if (body.action === "stop") { await stopReminders(token); return NextResponse.json({ ok: true }); }
     if (body.action === "call") return NextResponse.json(publicBuyer(await requestCall(token, body.note)));
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });

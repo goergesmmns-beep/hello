@@ -3,8 +3,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Check, FileText, Lock } from "lucide-react";
 import { money } from "@/content/listings";
+import { FundsForm } from "./funds-form";
+import { SignaturePad } from "./signature";
 
-type Pub = { name: string; email: string; linkedin?: string; website?: string; why?: string; route?: string; stage: string; ndaSigned: boolean; ndaSignedAt?: string };
+type Pub = { name: string; email: string; linkedin?: string; website?: string; why?: string; route?: string; stage: string; ndaSigned: boolean; ndaSignedAt?: string; funds?: { status?: string; note?: string; docs: string[] } };
 type L = { title: string; askLabel: string; floor: number | null; idealBuyer: string; gate: string };
 const routes = [
   ["own", "Individual buyer, own capital", "I can show proof of funds"],
@@ -18,6 +20,7 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
   const [b, setB] = useState(buyer);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [sigName, setSigName] = useState(buyer.name); const [drawn, setDrawn] = useState<string | null>(null);
   const [route, setRoute] = useState(buyer.route ?? (listing.idealBuyer === "strategic" ? "company" : ""));
   const send = async (body: BodyInit, json = true) => {
     setBusy(true); setErr("");
@@ -46,16 +49,18 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
         {Err}<button className="btn btn-primary w-full" disabled={busy}>Continue to NDA <ArrowRight size={17} /></button>
       </form>}
 
-      {step === 1 && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); send(JSON.stringify({ action: "sign", signedName: f.get("signedName"), agree: f.get("agree") === "on" })); }}>
+      {step === 1 && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (drawn === "") { setErr("Draw your signature, or switch to Type."); return; } const f = new FormData(e.currentTarget); send(JSON.stringify({ action: "sign", signedName: sigName, agree: f.get("agree") === "on", ...(drawn ? { signature: drawn } : {}) })); }}>
         <h1 className="text-3xl font-semibold">Sign the NDA</h1>
         {ndaDraft && <p className="rounded-md border border-brand bg-brand/15 p-3 text-sm font-medium">Draft wording for testing. Westbound Road's approved NDA replaces this before launch.</p>}
         <div className="max-h-80 space-y-3 overflow-auto rounded-md border p-4 text-[15px]">{clauses.map(([h, t]) => <div key={h}><p className="font-semibold">{h}</p><p className="text-muted-foreground">{t}</p></div>)}</div>
-        <label className="field" htmlFor="signedName">Type your full name to sign<input id="signedName" name="signedName" className="input" required defaultValue={b.name} /></label>
-        <label className="flex items-start gap-2.5 text-[15px]" htmlFor="agree"><input id="agree" name="agree" type="checkbox" required className="mt-1 size-4 accent-black" />I agree to this NDA and to signing it electronically.</label>
+        <SignaturePad name={sigName} onName={setSigName} onDrawn={setDrawn} />
+        <label className="flex items-start gap-2.5 text-[15px]" htmlFor="agree"><input id="agree" name="agree" type="checkbox" required className="mt-1 size-4 accent-black" />I agree to this NDA, and to using an electronic signature and records. You can download a signed copy right after.</label>
         {Err}<button className="btn btn-primary w-full" disabled={busy}>Sign NDA</button>
       </form>}
 
-      {step === 2 && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); send(new FormData(e.currentTarget), false); }}>
+      {step === 2 && (b.route === "own" || b.route === "letter") && <FundsForm token={token} floor={listing.floor} note={b.funds?.note} existing={b.funds?.docs ?? []} onDone={(x) => setB(x)} />}
+
+      {step === 2 && b.route !== "own" && b.route !== "letter" && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); send(new FormData(e.currentTarget), false); }}>
         {b.route === "company" ? <><h1 className="text-3xl font-semibold">Tell us about the company</h1><p className="text-muted-foreground">Company buyers skip the personal funds step.</p>
           <label className="field" htmlFor="role">Your role<input id="role" name="role" className="input" required /></label>
           <label className="field" htmlFor="acquisitions">Past acquisitions<input id="acquisitions" name="acquisitions" className="input" /></label>
@@ -63,14 +68,11 @@ export function AccessFlow({ token, code, buyer, listing, clauses, ndaDraft, loc
         : b.route === "financing" ? <><h1 className="text-3xl font-semibold">How would you fund this?</h1><p className="text-muted-foreground">Many deals use financing. Tell us your plan and an advisor will take it from there.</p>
           <label className="field" htmlFor="plan">Funding plan<select id="plan" name="plan" className="input" required defaultValue=""><option value="" disabled>Choose one</option><option>SBA loan</option><option>Seller financing</option><option>Outside investors</option><option>Not sure yet</option></select></label>
           <label className="field" htmlFor="notes">Anything else?<textarea id="notes" name="notes" className="input" rows={3} /></label></>
-        : <><h1 className="text-3xl font-semibold">{b.route === "letter" ? "Add your letter" : "Show funds for this deal"}</h1>
-          {listing.floor && <p className="text-muted-foreground">Suggested proof of funds: <span className="num text-foreground">{money(listing.floor)}</span>.</p>}
-          <p className="text-muted-foreground">Upload a bank or lender letter, or a recent statement. Only advisors can open it, it never goes to the CRM, and it is deleted after 30 days.</p>
-          <label className="field" htmlFor="file">PDF, PNG or JPG, under 4 MB<input id="file" name="file" type="file" required accept=".pdf,.png,.jpg,.jpeg" className="input" /></label></>}
+        : null}
         {Err}<button className="btn btn-primary w-full" disabled={busy}>Send to an advisor</button>
       </form>}
 
-      {b.stage === "review" && <div className="space-y-3"><h1 className="text-3xl font-semibold">An advisor has this.</h1><Done>NDA signed</Done><p className="text-muted-foreground">We will email you as soon as your CIM is ready.</p></div>}
+      {b.stage === "review" && <div className="space-y-3"><h1 className="text-3xl font-semibold">An advisor has this.</h1><Done>NDA signed</Done>{b.funds?.docs.length ? <Done>Proof of funds received: {b.funds.docs.length} {b.funds.docs.length === 1 ? "document" : "documents"}</Done> : null}<p className="text-muted-foreground">We will email you as soon as your CIM is ready.</p></div>}
 
       {(b.stage === "cim" || b.stage === "call") && <div className="space-y-4"><h1 className="text-3xl font-semibold">{code ? "Your CIM is open." : "Your CIM is ready."}</h1>
         {code ? <><a href={`/api/cim/${token}?v=${code}`} target="_blank" rel="noreferrer" className="btn btn-primary w-full"><FileText size={18} /> Open CIM</a><p className="text-sm text-muted-foreground">Your email appears on every page.</p>

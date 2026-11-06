@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 import { Decide } from "@/components/desk/actions";
 import { Breakdown, DailyBars, Funnel } from "@/components/desk/charts";
 import { Card, Empty, PageTitle } from "@/components/desk/shell";
+import { money } from "@/content/listings";
 import { catalog } from "@/lib/catalog";
 import { isAdmin } from "@/lib/admin";
 import { ago, analyze, hoursSince } from "@/lib/analytics";
@@ -19,6 +20,10 @@ export default async function Overview() {
   const [all, subs, cat] = await Promise.all([allBuyers(), allSubmissions(), catalog()]);
   const a = analyze(all, subs, cat); const k = a.kpis;
   const events = a.buyers.flatMap((b) => b.events.filter((e) => !["crm_error", "mail_error"].includes(e.type)).map((e) => ({ ...e, id: b.id, name: b.name }))).sort((x, y) => y.at.localeCompare(x.at)).slice(0, 8);
+  const today = new Date().toISOString().slice(0, 10);
+  const due = a.buyers.flatMap((b) => (b.tasks ?? []).filter((t) => !t.done && t.due && t.due <= today).map((t) => ({ ...t, buyerId: b.id, name: b.name }))).slice(0, 6);
+  const live = a.buyers.flatMap((b) => b.offers ?? []).filter((o) => ["Submitted", "Countered", "Accepted"].includes(o.status));
+  const fundsWaiting = a.buyers.filter((b) => b.funds?.status === "submitted").length;
   const issues = all.filter((b) => b.events.some((e) => e.type === "crm_error" || e.type === "mail_error")).length;
   return (<>
     <PageTitle title="Overview" sub="Buyer activity across every listing." />
@@ -29,7 +34,7 @@ export default async function Overview() {
       <Kpi label="NDAs signed" value={k.ndas} note={`${k.ndaRate}% of buyers`} />
       <Kpi label="CIMs released" value={k.cims} note={`Median ${time(k.medianToCim)}`} />
       <Kpi label="Calls requested" value={k.calls} note="Includes strategy sessions" />
-      <Kpi label="Keep warm" value={k.warm} note="Need a funding plan" />
+      <Kpi label="Funds to verify" value={fundsWaiting} hot={fundsWaiting > 0} note="Proof of funds queue" />
     </div>
     <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <Card title="Needs your decision" sub="Oldest first" action={<Link href="/admin/pipeline" className="text-sm text-muted-foreground hover:text-foreground">Pipeline</Link>}>
@@ -39,6 +44,8 @@ export default async function Overview() {
       <Card title="Inquiries" sub="Last 30 days"><DailyBars data={a.daily} /></Card>
       <div className="grid gap-3 sm:grid-cols-2"><Card title="Sources">{a.sources.length ? <Breakdown rows={a.sources} /> : <p className="text-sm text-muted-foreground">No buyers yet.</p>}</Card><Card title="Buyer routes">{a.routes.length ? <Breakdown rows={a.routes} /> : <p className="text-sm text-muted-foreground">No routes chosen yet.</p>}</Card></div>
       <Card title="Listing performance" action={<Link href="/admin/listings" className="text-sm text-muted-foreground hover:text-foreground">Manage</Link>}><div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm"><thead className="text-left text-xs text-muted-foreground"><tr><th className="pb-2 font-medium">Listing</th>{["Inquiries", "NDAs", "CIMs", "Calls"].map((h) => <th key={h} className="pb-2 text-right font-medium">{h}</th>)}</tr></thead><tbody>{[...a.byListing].sort((x, y) => y.inquiries - x.inquiries).slice(0, 6).map((r) => <tr key={r.listing.slug} className="border-t"><td className="max-w-56 truncate py-2.5 pr-3">{r.listing.title}</td>{[r.inquiries, r.ndas, r.cims, r.calls].map((v, i) => <td key={i} className="num py-2.5 text-right">{v}</td>)}</tr>)}</tbody></table></div></Card>
+      <Card title="Tasks due" action={<Link href="/admin/tasks" className="text-sm text-muted-foreground hover:text-foreground">All</Link>}>{due.length ? <ul className="space-y-2 text-sm">{due.map((t) => <li key={t.id} className="flex justify-between gap-3"><Link href={`/admin/buyers/${t.buyerId}`} className="min-w-0 truncate hover:text-brand">{t.text} · {t.name}</Link><span className="num shrink-0 text-xs text-muted-foreground">{t.due}</span></li>)}</ul> : <p className="text-sm text-muted-foreground">Nothing is due.</p>}</Card>
+      <Card title="Offers on the table" action={<Link href="/admin/offers" className="text-sm text-muted-foreground hover:text-foreground">All</Link>}><p className="num text-[32px] font-medium leading-none">{live.length}</p><p className="mt-2 text-sm text-muted-foreground">{live.length ? `Highest ${money(Math.max(...live.map((o) => o.amountUsd)))}` : "No live offers."}</p></Card>
       <Card title="Recent activity" action={<Link href="/admin/activity" className="text-sm text-muted-foreground hover:text-foreground">All</Link>}>{events.length ? <ol className="space-y-2.5 text-sm">{events.map((e, i) => <li key={i} className="grid grid-cols-[38px_1fr] gap-2"><span className="num text-xs leading-5 text-muted-foreground">{ago(e.at)}</span><span className="min-w-0"><Link href={`/admin/buyers/${e.id}`} className="font-medium hover:text-brand">{e.name}</Link> <span className="text-muted-foreground">{e.detail}</span></span></li>)}</ol> : <p className="text-sm text-muted-foreground">Activity appears after your first inquiry.</p>}</Card>
     </div>
   </>);

@@ -43,3 +43,11 @@ Open http://localhost:3000/admin in a second window and sign in. Open a buyer, r
 
 ## Connect Pipedrive
 Sign in at `/admin/integrations`, paste the API token from Pipedrive (Personal preferences > API), then press **Create Buyer Access pipeline**. A free Pipedrive trial works for your own test. Run a buyer through and watch the deal move.
+
+## Proof of funds, e-signature and broker tools
+
+1. Pick an own-capital or lender-letter buyer. Sign the NDA by typing or drawing.
+2. Upload documents, then review them at `/admin/funds`.
+3. Verify and release, or use Request more to send the buyer back with a note.
+4. Log offers and tasks on the buyer record. They roll up to `/admin/offers` and `/admin/tasks`.
+5. See `/admin/ndas`, `/admin/reports` and each listing's Seller report.

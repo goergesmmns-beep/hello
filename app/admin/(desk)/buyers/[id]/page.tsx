@@ -1,18 +1,19 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Check, ExternalLink, FileText } from "lucide-react";
-import { Decide, NoteForm } from "@/components/desk/actions";
+import { ArrowLeft, Check, ExternalLink, FileText, Minus } from "lucide-react";
+import { Decide, FundsReview, NoteForm, OfferForm, OfferStatusSelect, TaskCheck, TaskForm } from "@/components/desk/actions";
 import { Card, StagePill } from "@/components/desk/shell";
 import { money } from "@/content/listings";
 import { findListing } from "@/lib/catalog";
 import { isAdmin } from "@/lib/admin";
-import { routeLabels } from "@/lib/analytics";
+import { readiness, routeLabels } from "@/lib/analytics";
 import { config } from "@/lib/pipedrive";
 import { ruleFor } from "@/lib/rules";
 import { buyerById } from "@/lib/store";
 import { stageLabels } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+const fundsLabels: Record<string, string> = { submitted: "Waiting for review", verified: "Verified", more: "More requested", declined: "Not sufficient" };
 const when = (i: string) => i.slice(0, 16).replace("T", " ");
 export default async function BuyerPage({ params }: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) redirect("/admin/login");
@@ -20,10 +21,13 @@ export default async function BuyerPage({ params }: { params: Promise<{ id: stri
   if (!b) notFound();
   const l = (await findListing(b.listingSlug))!; const c = b.capacity; const rule = await ruleFor(l); const pd = await config().catch(() => null);
   const did = (t: string) => b.events.some((e) => e.type === t);
-  const steps: [string, boolean][] = [["Inquiry", true], ["Profile", !!b.why], ["NDA", !!b.nda], ["Funding", !!c || did("cim")], ["CIM released", did("cim")], ["CIM opened", b.cimViews > 0], ["Call", did("call")]];
+  const f = b.funds;
   const profile: [string, string | undefined][] = [["Email", b.email], ["Phone", b.phone], ["Company", b.company], ["LinkedIn", b.linkedin], ["Website", b.website], ["Buyer route", b.route && routeLabels[b.route]], ["Source", b.source], ["Inquiry message", b.message]];
   const funding: [string, string | undefined][] = [["Funding plan", c?.plan], ["Role", c?.role], ["Past acquisitions", c?.acquisitions], ["Competitor", c?.competitor], ["Notes", c?.notes], ["Listing proof of funds", rule.floorUsd ? money(rule.floorUsd) : undefined]];
   const Rows = ({ rows }: { rows: [string, string | undefined][] }) => <dl className="-my-2">{rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="grid gap-1 border-b py-2 last:border-0 sm:grid-cols-[150px_1fr]"><dt className="text-sm text-muted-foreground">{k}</dt><dd className="min-w-0 break-words text-[15px]">{v}</dd></div>)}</dl>;
+  const steps: [string, boolean][] = [["Inquiry", true], ["Profile", !!b.why], ["NDA", !!b.nda], ["Funding", !!c || !!f?.status || did("cim")], ["CIM released", did("cim")], ["CIM opened", b.cimViews > 0], ["Call", did("call")]];
+  const ready = readiness(b); const docAge = f?.docDate ? (Date.now() - new Date(f.docDate).getTime()) / 864e5 : null; const floor = rule.floorUsd ?? null;
+  const fundsRows: [string, string | undefined][] = [["Status", f?.status && fundsLabels[f.status]], ["Document type", f?.docType], ["Amount shown", f?.statedUsd ? money(f.statedUsd) : undefined], ["Document date", f?.docDate ? `${f.docDate}${docAge !== null && docAge > 90 ? " (over 90 days old)" : ""}` : undefined], ["Suggested for listing", floor ? money(floor) : undefined], ["Verified amount", f?.verifiedUsd ? money(f.verifiedUsd) : undefined], ["Verification valid until", f?.expiresAt?.slice(0, 10)]];
   return (<>
     <Link href="/admin/buyers" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft size={15} /> Buyers</Link>
     <div className="mb-5 mt-3 flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm text-muted-foreground">{l.title}</p><h1 className="text-[34px] font-semibold leading-tight">{b.name}</h1><div className="mt-2 flex items-center gap-2"><StagePill stage={b.stage} label={stageLabels[b.stage]} />{b.archived && <span className="text-sm text-muted-foreground">Archived</span>}</div></div><Decide id={b.id} stage={b.stage} archived={b.archived} paused={b.remindersOff} /></div>
@@ -31,11 +35,15 @@ export default async function BuyerPage({ params }: { params: Promise<{ id: stri
     <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-3">
         {b.why && <Card title="Why this business"><p className="leading-relaxed">{b.why}</p></Card>}
+        {f && <Card title="Proof of funds" action={<span className="text-sm font-medium">{f.status && fundsLabels[f.status]}</span>}><Rows rows={fundsRows.slice(1)} /><div className="mt-3 space-y-2">{f.docs.map((d) => <a key={d.fileId} target="_blank" rel="noreferrer" href={`/api/admin/files/${d.fileId}`} className="flex items-center gap-2 rounded-md border p-2.5 text-sm hover:border-foreground"><FileText size={16} className="text-brand" /><span className="truncate">{d.name}</span><ExternalLink size={14} className="ml-auto shrink-0 text-muted-foreground" /></a>)}</div>{f.docs[0] && <iframe title={`Preview of ${f.docs[0].name}`} src={`/api/admin/files/${f.docs[0].fileId}`} className="mt-3 h-72 w-full rounded-md border bg-white" />}{f.note && f.status === "more" && <p className="mt-3 text-sm text-muted-foreground">Asked for: {f.note}</p>}{f.status !== "verified" && <div className="mt-3"><FundsReview id={b.id} floor={floor} stated={f.statedUsd} stage={b.stage} /></div>}</Card>}
+        <Card title="Offers" sub={l.title}>{(b.offers ?? []).length > 0 && <ul className="mb-3">{b.offers!.map((o) => <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-2.5"><div className="min-w-0"><p className="num font-medium">{money(o.amountUsd)}</p><p className="text-xs text-muted-foreground">{[o.cashUsd && `${money(o.cashUsd)} cash`, o.sellerNoteUsd && `${money(o.sellerNoteUsd)} seller note`, o.earnoutUsd && `${money(o.earnoutUsd)} earnout`].filter(Boolean).join(" · ") || "No terms logged"}</p>{o.notes && <p className="mt-1 text-sm">{o.notes}</p>}</div><OfferStatusSelect id={b.id} offerId={o.id} status={o.status} /></li>)}</ul>}<OfferForm id={b.id} /></Card>
         <Card title="Profile"><Rows rows={profile} /></Card>
         <Card title="Funding and fit"><Rows rows={funding} /></Card>
       </div>
       <div className="min-w-0 space-y-3">
-        <Card title="Documents"><div className="space-y-2">{b.nda && <a target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-md border p-2.5 text-sm hover:border-foreground" href={`/api/admin/files/${b.nda.fileId}`}><FileText size={16} className="text-brand" />Signed NDA <span className="num ml-auto text-xs text-muted-foreground">{b.nda.signedAt.slice(0, 10)}</span></a>}{c?.fileId && <a target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-md border p-2.5 text-sm hover:border-foreground" href={`/api/admin/files/${c.fileId}`}><FileText size={16} className="text-brand" /><span className="truncate">{c.fileName}</span></a>}{!b.nda && !c?.fileId && <p className="text-sm text-muted-foreground">No documents yet.</p>}{b.cimViews > 0 && <p className="text-sm text-muted-foreground">CIM opened <span className="num text-foreground">{b.cimViews}</span> {b.cimViews === 1 ? "time" : "times"}.</p>}</div></Card>
+        <Card title="Buyer readiness" action={<span className="num text-2xl font-medium">{ready.score}</span>}><span className="mb-3 block h-1.5 rounded bg-muted"><i className="block h-full rounded bg-brand" style={{ width: `${ready.score}%` }} /></span><ul className="space-y-1.5 text-sm">{ready.items.map(([t, p, ok]) => <li key={t} className="flex items-center gap-2">{ok ? <Check size={14} className="text-brand-ink" /> : <Minus size={14} className="text-muted-foreground" />}<span className={ok ? "" : "text-muted-foreground"}>{t}</span><span className="num ml-auto text-xs text-muted-foreground">{p}</span></li>)}</ul></Card>
+        <Card title="Tasks"><TaskForm id={b.id} />{(b.tasks ?? []).length > 0 && <ul className="mt-3 space-y-2">{b.tasks!.map((t) => <li key={t.id} className="flex items-start justify-between gap-3"><TaskCheck id={b.id} taskId={t.id} done={t.done} text={t.text} />{t.due && <span className="num shrink-0 text-xs text-muted-foreground">{t.due}</span>}</li>)}</ul>}</Card>
+        <Card title="Documents"><div className="space-y-2">{b.nda && <a target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-md border p-2.5 text-sm hover:border-foreground" href={`/api/admin/files/${b.nda.fileId}`}><FileText size={16} className="text-brand" />Signed NDA <span className="num ml-auto text-xs text-muted-foreground">{b.nda.signedAt.slice(0, 10)}</span></a>}{c?.fileId && <a target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-md border p-2.5 text-sm hover:border-foreground" href={`/api/admin/files/${c.fileId}`}><FileText size={16} className="text-brand" /><span className="truncate">{c.fileName}</span></a>}{!b.nda && !c?.fileId && <p className="text-sm text-muted-foreground">No documents yet.</p>}{b.nda && <p className="text-xs text-muted-foreground">Signature: {b.nda.method ?? "typed"} · IP <span className="num">{b.nda.ip}</span>{b.nda.hash && <span className="num mt-1 block break-all">SHA-256 {b.nda.hash}</span>}</p>}{b.cimViews > 0 && <p className="text-sm text-muted-foreground">CIM opened <span className="num text-foreground">{b.cimViews}</span> {b.cimViews === 1 ? "time" : "times"}.</p>}</div></Card>
         {b.pipedrive?.dealId && pd && <a target="_blank" rel="noreferrer" href={`https://${pd.domain}.pipedrive.com/deal/${b.pipedrive.dealId}`} className="flex items-center justify-between rounded-xl border bg-card p-4 text-sm font-medium hover:border-foreground">Open deal in Pipedrive <ExternalLink size={15} /></a>}
         <Card title="Advisor notes"><NoteForm id={b.id} />{(b.notes ?? []).length > 0 && <ul className="mt-4 space-y-3">{b.notes!.map((n, i) => <li key={i} className="border-t pt-3 text-sm"><p className="whitespace-pre-wrap">{n.text}</p><p className="num mt-1 text-xs text-muted-foreground">{when(n.at)}</p></li>)}</ul>}</Card>
         <Card title="Timeline"><ol className="space-y-2.5">{b.events.map((e, i) => <li key={i} className="text-sm"><p className={e.type.endsWith("_error") ? "text-destructive" : ""}>{e.detail}</p><p className="num text-xs text-muted-foreground">{when(e.at)} UTC</p></li>)}</ol></Card>

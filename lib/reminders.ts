@@ -9,7 +9,7 @@ export const getFollowups = async () => (await getSetting<Followups>("followups"
 export const saveFollowups = (f: Followups) => setSetting("followups", f);
 export const canEmail = () => !!process.env.RESEND_API_KEY || !process.env.VERCEL;
 
-const quiet = new Set(["reminder", "note", "link", "cim_view", "crm_error", "mail_error", "archive", "reminders"]);
+const quiet = new Set(["offer", "reminder", "note", "link", "cim_view", "crm_error", "mail_error", "archive", "reminders"]);
 const lastStep = (b: Buyer) => b.events.find((e) => !quiet.has(e.type))?.at ?? b.createdAt;
 const link = (b: Buyer) => `${siteUrl()}/access/${b.token}?v=${b.verifyCode}`;
 type Step = { key: string; afterHours: number; subject: (t: string) => string; body: (b: Buyer, t: string, book?: string) => string };

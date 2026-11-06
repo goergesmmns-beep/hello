@@ -1,20 +1,21 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Building2, Inbox, LayoutDashboard, Menu, Plug, Users, Workflow, X } from "lucide-react";
+import { Activity, BarChart3, Building2, CheckSquare, FileSignature, Handshake, Inbox, Landmark, LayoutDashboard, Menu, Plug, Users, Workflow, X } from "lucide-react";
+import { Search } from "./search";
 import { useState } from "react";
 import { Wordmark } from "@/components/chrome";
 import { Logout } from "./actions";
 
-const items = [["/admin", "Overview", LayoutDashboard], ["/admin/pipeline", "Pipeline", Workflow], ["/admin/buyers", "Buyers", Users], ["/admin/listings", "Listings", Building2], ["/admin/inbox", "Inbox", Inbox], ["/admin/activity", "Activity", Activity], ["/admin/integrations", "Connections", Plug]] as const;
-export function Shell({ review, inbox, children }: { review: number; inbox: number; children: React.ReactNode }) {
+const items = [["/admin", "Overview", LayoutDashboard], ["/admin/tasks", "Tasks", CheckSquare], ["/admin/pipeline", "Pipeline", Workflow], ["/admin/buyers", "Buyers", Users], ["/admin/funds", "Proof of funds", Landmark], ["/admin/ndas", "NDAs", FileSignature], ["/admin/offers", "Offers", Handshake], ["/admin/listings", "Listings", Building2], ["/admin/reports", "Reports", BarChart3], ["/admin/inbox", "Inbox", Inbox], ["/admin/activity", "Activity", Activity], ["/admin/integrations", "Connections", Plug]] as const;
+export function Shell({ review, inbox, funds, tasks, children }: { review: number; inbox: number; funds: number; tasks: number; children: React.ReactNode }) {
   const path = usePathname(); const [open, setOpen] = useState(false);
-  const badge = (h: string) => (h === "/admin/pipeline" ? review : h === "/admin/inbox" ? inbox : 0);
+  const badge = (h: string) => (h === "/admin/pipeline" ? review : h === "/admin/inbox" ? inbox : h === "/admin/funds" ? funds : h === "/admin/tasks" ? tasks : 0);
   const nav = <nav className="space-y-1" aria-label="Advisor desk">{items.map(([h, l, I]) => { const on = h === "/admin" ? path === h : path.startsWith(h); return <Link key={h} href={h} onClick={() => setOpen(false)} aria-current={on ? "page" : undefined} className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-[14.5px] font-medium transition-colors ${on ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><I size={17} className={on ? "text-brand" : ""} />{l}{badge(h) > 0 && <span className="num ml-auto rounded bg-brand px-1.5 text-xs font-semibold text-brand-foreground">{badge(h)}</span>}</Link>; })}</nav>;
   return (
     <div className="lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r p-4 lg:flex"><Link href="/" className="mb-7 px-2 pt-1"><Wordmark /></Link>{nav}<div className="mt-auto flex items-center justify-between px-3"><Link href="/" className="text-sm text-muted-foreground hover:text-foreground">View site</Link><Logout /></div></aside>
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-5 lg:hidden"><Wordmark /><button aria-label="Menu" aria-expanded={open} className="btn btn-ghost !min-h-9 !px-2" onClick={() => setOpen(!open)}>{open ? <X size={19} /> : <Menu size={19} />}</button></header>
+      <aside className="print:!hidden sticky top-0 hidden h-dvh flex-col border-r p-4 lg:flex"><Link href="/" className="mb-5 px-2 pt-1"><Wordmark /></Link><div className="mb-3"><Search /></div>{nav}<div className="mt-auto flex items-center justify-between px-3"><Link href="/" className="text-sm text-muted-foreground hover:text-foreground">View site</Link><Logout /></div></aside>
+      <header className="print:hidden sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-5 lg:hidden"><Wordmark /><button aria-label="Menu" aria-expanded={open} className="btn btn-ghost !min-h-9 !px-2" onClick={() => setOpen(!open)}>{open ? <X size={19} /> : <Menu size={19} />}</button></header>
       {open && <div className="border-b p-3 lg:hidden">{nav}<div className="mt-2 px-3"><Logout /></div></div>}
       <main className="min-w-0 px-5 py-7 lg:px-9 lg:py-9"><div className="mx-auto max-w-[1320px]">{children}</div></main>
     </div>
