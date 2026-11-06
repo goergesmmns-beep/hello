@@ -15,7 +15,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
     <aside className="dark relative hidden overflow-hidden bg-background p-12 text-foreground lg:flex lg:flex-col"><div className="aurora" aria-hidden><i /><i /></div><div aria-hidden className="grid-lines absolute inset-0" />
       <Link href="/" className="relative"><Wordmark /></Link>
       <div className="relative mt-auto max-w-lg"><p className="eyebrow mb-4 !text-brand">Westbound Road account</p><h2 className="text-[44px] font-semibold leading-[1.02] tracking-[-.04em]">{sp.intent === "sell" ? "Sell with advisors who have done it." : "Buy your next business with less friction."}</h2>
-        <ul className="mt-10 space-y-3">{points.map(([I, h, t]) => { const X = I as typeof Store; return <li key={h as string} className="ringcard flex gap-4 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-foreground"><X size={18} /></span><span><b className="block">{h as string}</b><span className="text-sm text-muted-foreground">{t as string}</span></span></li>; })}</ul></div>
+        <ul className="mt-10 space-y-5">{points.map(([I, h, t]) => { const X = I as typeof Store; return <li key={h as string} className="ringcard flex gap-4 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-foreground"><X size={18} /></span><span><b className="block">{h as string}</b><span className="text-sm text-muted-foreground">{t as string}</span></span></li>; })}</ul></div>
       <p className="relative mt-12 text-xs text-muted-foreground">Certified M&A Advisors · Confidential by default</p>
     </aside>
     <main className="flex flex-col px-5 py-8 sm:px-10">

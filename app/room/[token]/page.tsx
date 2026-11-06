@@ -67,7 +67,7 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
             {l.highlights.length > 0 && <ul className="mt-6 grid gap-2.5 sm:grid-cols-2">{l.highlights.map((h) => <li key={h} className="flex gap-2.5 rounded-lg border p-3.5"><Check size={18} className="mt-0.5 shrink-0 text-brand-ink" />{h}</li>)}</ul>}
           </Section>
           {fin.length > 0 && <Section id="financials" n={at("financials")} title="Financial performance">
-            <div className="grid gap-3 sm:grid-cols-3"><Tile k={`Revenue, ${last.period}`} v={short(last.revenue)} sub={growth !== null ? `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}% since ${first.period}` : undefined} /><Tile k={`SDE, ${last.period}`} v={short(last.sde)} /><Tile k="Margin" v={last.revenue ? `${((last.sde / last.revenue) * 100).toFixed(1)}%` : "n/a"} /></div>
+            <div className="grid gap-5 sm:grid-cols-3"><Tile k={`Revenue, ${last.period}`} v={short(last.revenue)} sub={growth !== null ? `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}% since ${first.period}` : undefined} /><Tile k={`SDE, ${last.period}`} v={short(last.sde)} /><Tile k="Margin" v={last.revenue ? `${((last.sde / last.revenue) * 100).toFixed(1)}%` : "n/a"} /></div>
             {fin.length > 1 && <div className="mt-6 ringcard p-5"><Bars rows={fin} /></div>}
             <div className="mt-6 overflow-x-auto"><table className="w-full min-w-[420px] text-sm"><thead className="text-left text-muted-foreground"><tr><th className="pb-2 font-medium">Period</th><th className="pb-2 text-right font-medium">Revenue</th><th className="pb-2 text-right font-medium">SDE</th><th className="pb-2 text-right font-medium">Margin</th></tr></thead><tbody>{fin.map((x) => <tr key={x.period} className="border-t"><td className="py-2.5">{x.period}</td><td className="num py-2.5 text-right">{money(x.revenue)}</td><td className="num py-2.5 text-right">{money(x.sde)}</td><td className="num py-2.5 text-right">{x.revenue ? `${((x.sde / x.revenue) * 100).toFixed(1)}%` : ""}</td></tr>)}</tbody></table></div>
             <p className="mt-3 text-xs text-muted-foreground">Figures are seller-provided and unaudited. Full statements are in the documents section and the CIM.</p>
@@ -77,7 +77,7 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
               {story.map(([h, t]) => <div key={h}><h3 className="mb-1.5 text-lg font-semibold">{h}</h3><p className="whitespace-pre-line leading-relaxed text-muted-foreground">{t}</p></div>)}</div>
           </Section>
           <Section id="terms" n={at("terms")} title="Deal terms">
-            <div className="grid gap-3 sm:grid-cols-3"><Tile k="Asking price" v={l.askUsd ? short(l.askUsd) : l.askLabel} sub={l.askUsd ? l.askLabel : undefined} />{l.askUsd && last?.sde ? <Tile k="SDE multiple" v={`${(l.askUsd / last.sde).toFixed(2)}x`} sub={`On ${last.period} SDE`} /> : null}{l.askUsd && last?.revenue ? <Tile k="Revenue multiple" v={`${(l.askUsd / last.revenue).toFixed(2)}x`} sub={`On ${last.period} revenue`} /> : null}</div>
+            <div className="grid gap-5 sm:grid-cols-3"><Tile k="Asking price" v={l.askUsd ? short(l.askUsd) : l.askLabel} sub={l.askUsd ? l.askLabel : undefined} />{l.askUsd && last?.sde ? <Tile k="SDE multiple" v={`${(l.askUsd / last.sde).toFixed(2)}x`} sub={`On ${last.period} SDE`} /> : null}{l.askUsd && last?.revenue ? <Tile k="Revenue multiple" v={`${(l.askUsd / last.revenue).toFixed(2)}x`} sub={`On ${last.period} revenue`} /> : null}</div>
             <p className="mt-5 whitespace-pre-line leading-relaxed text-muted-foreground">{r.structure ?? "Structure is open to discussion. Westbound Road works with buyers on cash, SBA, seller financing and earnout combinations, and can introduce lenders."}</p>
           </Section>
           <Section id="documents" n={at("documents")} title="Documents">
@@ -88,7 +88,7 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
             <AskForm token={token} v={v!} initial={(b.questions ?? []).map(({ id, at, q, a }) => ({ id, at, q, a }))} />
           </Section>
           <Section id="next" n={at("next")} title="Next steps">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2">
               <div className="ringcard p-5"><h3 className="font-semibold">Talk to an advisor</h3><p className="mt-1 text-sm text-muted-foreground">Walk through the numbers, the seller and deal structure.</p>{bookingUrl ? <a id="room-book" href={bookingUrl} target="_blank" rel="noreferrer" className="btn btn-primary mt-4 w-full"><CalendarDays size={17} /> Book a call</a> : <Link href={`/access/${token}?v=${encodeURIComponent(v!)}`} className="btn btn-primary mt-4 w-full"><CalendarDays size={17} /> Request a call</Link>}</div>
               <div className="ringcard p-5"><h3 className="font-semibold">Ready to move?</h3><p className="mt-1 text-sm text-muted-foreground">Share a non-binding indication of interest. It goes straight to the advisor.</p></div>
             </div>
