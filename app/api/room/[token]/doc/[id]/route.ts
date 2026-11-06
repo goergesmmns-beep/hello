@@ -2,6 +2,7 @@ import { findListing } from "@/lib/catalog";
 import { roomBuyer, trackDoc } from "@/lib/flow";
 import { watermarkBytes, watermarkedCim } from "@/lib/pdf";
 import { getFile } from "@/lib/store";
+import { cimVersions } from "@/lib/cim";
 import { clientIp } from "@/lib/limit";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string; id: string }> }) {
@@ -16,6 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     if (!f) return new Response("Not found", { status: 404 });
     bytes = await watermarkBytes(f.bytes, b.email, clientIp(req)); name = f.name.split("::").pop()!;
   }
-  await trackDoc(b, name);
+  const cv = id === "cim" ? (await cimVersions(l.slug)).at(-1)?.v : undefined;
+  await trackDoc(b, name, cv ? `Opened CIM v${cv}` : undefined);
   return new Response(Buffer.from(bytes), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${name.replace(/[^\w .-]/g, "")}${name.endsWith(".pdf") ? "" : ".pdf"}"`, "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } });
 }

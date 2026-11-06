@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createInquiry } from "@/lib/flow";
+import { currentUser } from "@/lib/accounts";
 import { clientIp, limited } from "@/lib/limit";
 
 const schema = z.object({ listingSlug: z.string(), name: z.string().min(2).max(120), email: z.email().max(200), phone: z.string().max(40).optional(), company: z.string().max(160).optional(), company_url: z.string().optional() });
@@ -14,6 +15,9 @@ export async function POST(req: Request) {
   try {
     const { buyer, isNew } = await createInquiry({ ...d, source: "Website" });
     // A returning email only gets its link by email, so nobody can open another person's record.
-    return NextResponse.json(isNew ? { next: `/access/${buyer.token}` } : { ok: true });
+    // Signed-in owners of the email have proved it, so they go straight to their existing record.
+    const u = await currentUser().catch(() => null);
+    if (!isNew && u && u.email === buyer.email.toLowerCase()) return NextResponse.json({ next: `/access/${buyer.token}?v=${buyer.verifyCode}` });
+    return NextResponse.json(isNew ? { next: `/access/${buyer.token}${u && u.email === buyer.email.toLowerCase() ? `?v=${buyer.verifyCode}` : ""}` } : { ok: true });
   } catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 400 }); }
 }

@@ -4,7 +4,7 @@ import postgres from "postgres";
 import type { Buyer, StoredFile, Submission } from "./types";
 
 /** Postgres on Vercel (DATABASE_URL). A local JSON file for development only. */
-type Local = { settings?: Record<string, unknown>; hits?: Record<string, { start: number; count: number }>; buyers: Buyer[]; submissions: Submission[]; files: (Omit<StoredFile, "bytes"> & { b64: string })[] };
+type Local = { records?: Record<string, Record<string, unknown>>; settings?: Record<string, unknown>; hits?: Record<string, { start: number; count: number }>; buyers: Buyer[]; submissions: Submission[]; files: (Omit<StoredFile, "bytes"> & { b64: string })[] };
 const localPath = path.join(process.cwd(), ".data", "store.json");
 
 async function readLocal(): Promise<Local> {
@@ -34,6 +34,7 @@ async function db() {
     create table if not exists submissions (id text primary key, data jsonb not null);
     create table if not exists settings (key text primary key, value jsonb not null);
     create table if not exists rate_limits (key text primary key, window_start timestamptz not null, count int not null);
+    create table if not exists records (kind text not null, id text not null, data jsonb not null, updated_at timestamptz not null default now(), primary key (kind, id));
     create table if not exists files (id text primary key, buyer_id text not null, kind text not null, name text not null, mime text not null, bytes bytea not null, created_at timestamptz not null default now());
   `);
     });
@@ -190,4 +191,28 @@ export async function clearDemo() {
   await sql`delete from buyers where data->>'demo' = 'true'`;
   await sql`delete from submissions where data->>'demo' = 'true'`;
   return ids.length;
+}
+
+/** Small document store for accounts, login codes and seller submissions. */
+export async function putRecord<T>(kind: string, id: string, data: T) {
+  if (useLocal()) { const d = await readLocal(); d.records ??= {}; (d.records[kind] ??= {})[id] = data; return writeLocal(d); }
+  const sql = await db();
+  await sql`insert into records (kind, id, data, updated_at) values (${kind}, ${id}, ${sql.json(data as never)}, now()) on conflict (kind, id) do update set data = excluded.data, updated_at = now()`;
+}
+export async function getRecord<T>(kind: string, id: string): Promise<T | null> {
+  if (useLocal()) return ((await readLocal()).records?.[kind]?.[id] as T) ?? null;
+  const sql = await db();
+  const r = await sql`select data from records where kind = ${kind} and id = ${id}`;
+  return (r[0]?.data as T) ?? null;
+}
+export async function listRecords<T>(kind: string): Promise<T[]> {
+  if (useLocal()) return Object.values((await readLocal()).records?.[kind] ?? {}) as T[];
+  const sql = await db();
+  const r = await sql`select data from records where kind = ${kind} order by updated_at desc limit 1000`;
+  return r.map((x) => x.data as T);
+}
+export async function deleteRecord(kind: string, id: string) {
+  if (useLocal()) { const d = await readLocal(); if (d.records?.[kind]) delete d.records[kind][id]; return writeLocal(d); }
+  const sql = await db();
+  await sql`delete from records where kind = ${kind} and id = ${id}`;
 }

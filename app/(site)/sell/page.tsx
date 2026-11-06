@@ -26,7 +26,7 @@ const qs = [
 export default function Sell() {
   return (<>
     <PageHead eyebrow="Sell-side advisory" title="Sell your business, from valuation to close." lede="A confidential, competitive process run by Certified M&A Advisors who have built and sold businesses themselves, so you can stay focused on running the company." stats={stats.map((s) => [s.value, s.label] as [string, string])}>
-      <div className="mt-8 flex flex-wrap gap-3"><Link href="/valuation" className="btn btn-brand">Get a free valuation <ArrowRight size={17} /></Link><a href="#session" className="btn btn-ghost">Book a strategy session</a></div>
+      <div className="mt-8 flex flex-wrap gap-3"><Link href="/valuation" className="btn btn-brand">Get a free valuation <ArrowRight size={17} /></Link><Link href="/login?intent=sell&next=%2Faccount%2Fsell%2Fnew" className="btn btn-ghost">List your business online</Link><a href="#session" className="btn btn-ghost">Book a strategy session</a></div>
     </PageHead>
     <section className="border-b"><div className="wrap flex flex-wrap items-center gap-x-8 gap-y-3 py-6"><p className="eyebrow">We sell</p>{sectors.map(([I, t]) => <span key={t} className="flex items-center gap-2 text-[15px] font-medium"><I size={17} className="text-brand-ink" />{t}</span>)}</div></section>
 

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, BarChart3, Check, FileText, Landmark, Lock, MessagesSquare, ShieldCheck, Sparkles, TrendingUp, Users } from "lucide-react";
 import { categoryIcon, ListingCard, multipleLabel } from "@/components/listing-card";
 import { CopyLink } from "@/components/share";
+import { SaveListing } from "@/components/save-listing";
 import { compact, statusLabel } from "@/content/listings";
 import { findListing, isOpen, publicListings } from "@/lib/catalog";
 
@@ -35,7 +36,7 @@ export default async function ListingPage({ params }: P) {
       <section className="dark relative isolate overflow-hidden bg-background text-foreground">
         <div className="aurora" aria-hidden><i /><i /></div><div aria-hidden className="grid-lines absolute inset-0 -z-10" />
         <div className="wrap relative pb-12 pt-10 md:pb-16 md:pt-16">
-          <nav aria-label="Breadcrumb" className="mb-7 flex items-center gap-1.5 text-sm text-muted-foreground"><Link href="/buy" className="hover:text-foreground">Businesses for sale</Link><span aria-hidden>/</span><span>{l.category}</span></nav>
+          <div className="mb-7 flex items-center justify-between gap-3"><nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground"><Link href="/buy" className="hover:text-foreground">Businesses for sale</Link><span aria-hidden>/</span><span>{l.category}</span></nav><SaveListing slug={l.slug} className="lg:hidden" /></div>
           <div className="mb-5 flex flex-wrap items-center gap-2"><span className="grid size-9 place-items-center rounded-lg bg-brand text-brand-foreground"><I size={18} /></span><span className="pill">{l.category}</span><span className={`pill ${l.status === "available" ? "" : "pill-brand"}`}>{statusLabel[l.status]}</span>{l.idealBuyer === "strategic" && <span className="pill">Strategic fit</span>}</div>
           <h1 className="rise max-w-4xl text-[clamp(2rem,4.8vw,4rem)] font-semibold leading-[1.03] tracking-[-.04em]">{l.headline}</h1>
           <p className="lede mt-5 max-w-3xl">{l.summary}</p>
@@ -70,7 +71,7 @@ export default async function ListingPage({ params }: P) {
             <Link id="rail-cta" href={cta} className="btn btn-brand mt-6 w-full">{pending ? "Talk to an advisor" : "Sign NDA and unlock"} <ArrowRight size={17} /></Link>
             <ul className="mt-5 space-y-2.5 text-sm">{(pending ? ["This sale is pending", "Ask about similar businesses", "Set a deal alert for the next one"] : ["One-tap NDA on any device", "Private deal room with the CIM", "Financing plans welcome"]).map((t) => <li key={t} className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-brand-ink" />{t}</li>)}</ul>
           </div>
-          <div className="flex items-center justify-between ringcard p-4 text-sm"><span className="flex items-center gap-2"><ShieldCheck size={16} className="text-brand-ink" />Confidential process</span><CopyLink /></div>
+          <div className="flex items-center justify-between ringcard p-4 text-sm"><SaveListing slug={l.slug} /><CopyLink /></div>
           <Link href="/contact" className="block ringcard p-4 text-sm hover:border-foreground/40"><span className="font-semibold">Questions first?</span><span className="block text-muted-foreground">Talk to an advisor before you sign.</span></Link>
         </div></aside>
       </div>

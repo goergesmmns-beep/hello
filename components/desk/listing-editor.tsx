@@ -6,9 +6,10 @@ import type { Listing } from "@/content/listings";
 import { Card } from "./shell";
 import { RoomEditor } from "./room-editor";
 import { ListingFacts } from "./listing-facts";
+import { CimCard } from "./cim-card";
 
 const blank: Listing = { slug: "", title: "", headline: "", band: "under", category: "", status: "draft", askLabel: "", askUsd: null, metrics: [{ label: "", value: "" }], summary: "", highlights: [], body: [{ heading: "", text: "" }], gate: "after_review", floorUsd: null, idealBuyer: "any" };
-export function ListingEditor({ listing, hasCim, docs = [] }: { listing?: Listing; hasCim?: boolean; docs?: { id: string; name: string }[] }) {
+export function ListingEditor({ listing, hasCim, docs = [], versions = [] }: { versions?: { v: number; name: string; at: string; size: number }[]; listing?: Listing; hasCim?: boolean; docs?: { id: string; name: string }[] }) {
   const router = useRouter();
   const [l, setL] = useState<Listing>(listing ?? blank);
   const [hl, setHl] = useState((listing?.highlights ?? []).join("\n")); const [gr, setGr] = useState((listing?.growth ?? []).join("\n"));
@@ -50,7 +51,7 @@ export function ListingEditor({ listing, hasCim, docs = [] }: { listing?: Listin
           <label className="field" htmlFor="l-floor">Proof of funds, USD<input id="l-floor" inputMode="numeric" className="input num" value={l.floorUsd ?? ""} onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); set("floorUsd", v ? Number(v) : null); }} /></label>
           <label className="field" htmlFor="l-ideal">Best suited to<select id="l-ideal" className="input" value={l.idealBuyer} onChange={(e) => set("idealBuyer", e.target.value as Listing["idealBuyer"])}><option value="any">Any buyer</option><option value="strategic">Strategic acquirer</option></select></label>
         </div></Card>
-        {listing && <Card title="CIM" sub={cim ? "Uploaded. Each buyer gets a stamped copy." : "Buyers see a sample page until you upload one."}><label className="btn btn-ghost w-full cursor-pointer" htmlFor="cim-file"><Upload size={16} /> {cim ? "Replace CIM" : "Upload CIM"}</label><input id="cim-file" type="file" accept="application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} /><p className="mt-2 text-xs text-muted-foreground">PDF under 4 MB. Larger files go in the project's private folder.</p></Card>}
+        {listing && <CimCard slug={listing.slug} initial={versions} hasFile={!!hasCim} />}
       </div>
     </form>
   );

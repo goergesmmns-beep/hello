@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Field = { name: string; label: string; type?: string; required?: boolean; options?: string[]; area?: boolean };
@@ -33,11 +33,12 @@ export function ContactForm({ kind, fields, submit, done }: { kind: string; fiel
 }
 export function RequestForm({ slug }: { slug: string }) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false); const [me, setMe] = useState<{ name: string; email: string; phone?: string; company?: string } | null>(null);
+  useEffect(() => { fetch("/api/account").then((r) => r.json()).then((d) => d.user && setMe(d.user)).catch(() => {}); }, []);
   const [note, setNote] = useState("");
   if (note) return <p role="status" className="rounded-lg border p-6 text-lg font-medium">{note}</p>;
   return (
-    <form className="relative grid gap-4 sm:grid-cols-2" onSubmit={async (e) => {
+    <form key={me?.email ?? "anon"} className="relative grid gap-4 sm:grid-cols-2" onSubmit={async (e) => {
       e.preventDefault(); setBusy(true);
       const res = await fetch("/api/inquiry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...Object.fromEntries(new FormData(e.currentTarget)), listingSlug: slug }) });
       const data = await res.json().catch(() => ({}));
@@ -46,7 +47,8 @@ export function RequestForm({ slug }: { slug: string }) {
       else setNote(res.ok ? "You already have a link for this listing. We just emailed it to you." : "That did not send. Check your details and try again.");
     }}>
       <Trap />
-      {[{ name: "name", label: "Full name", required: true }, { name: "email", label: "Email", type: "email", required: true }, { name: "phone", label: "Phone", type: "tel" }, { name: "company", label: "Company, if any" }].map((f) => <Control key={f.name} f={f} />)}
+      {me ? <p className="rounded-xl border bg-surface-1 p-3 text-sm sm:col-span-2">Signed in as <b>{me.email}</b>. Your saved profile carries over, so you go straight to the NDA.</p> : <p className="text-sm text-muted-foreground sm:col-span-2">Have an account? <a className="font-medium text-foreground underline" href={`/login?next=${encodeURIComponent(`/buy/${slug}/request`)}`}>Sign in</a> to skip steps.</p>}
+      {[{ name: "name", label: "Full name", required: true }, { name: "email", label: "Email", type: "email", required: true }, { name: "phone", label: "Phone", type: "tel" }, { name: "company", label: "Company, if any" }].map((f) => <Control key={f.name} f={f} value={me?.[f.name as "name" | "email" | "phone" | "company"]} />)}
       <button className="btn btn-primary sm:col-span-2" disabled={busy}>{busy ? "Starting…" : "Continue"}</button>
     </form>
   );

@@ -1,0 +1,14 @@
+import Link from "next/link";
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import { Empty, PageTitle } from "@/components/desk/panel";
+import { categoryIcon } from "@/components/listing-card";
+import { me } from "@/lib/my";
+import { subLabels, subsFor } from "@/lib/seller";
+const tone: Record<string, string> = { draft: "var(--c-gray)", submitted: "var(--c-blue)", review: "var(--c-purple)", changes: "var(--c-orange)", approved: "var(--c-green)", rejected: "var(--destructive)" };
+export default async function MyListings() {
+  const u = await me(); const subs = await subsFor(u.id);
+  return <><PageTitle title="My listings" sub="Businesses you have submitted to Westbound Road."><Link href="/account/sell/new" className="btn btn-brand !min-h-10">+ List a business</Link></PageTitle>
+    {subs.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{subs.map((s) => { const I = categoryIcon(s.business.category ?? ""); return <Link key={s.id} href={`/account/sell/${s.id}`} className="panel transition-transform hover:-translate-y-0.5"><div className="panel-head"><I size={17} className="text-muted-foreground" /><span className="flex-1 truncate text-[15px] font-semibold">{s.business.category || "New listing"}</span><span className="flex items-center gap-1.5 rounded-full border bg-surface-2 px-2.5 py-0.5 text-xs"><i className="size-1.5 rounded-full" style={{ background: tone[s.status] }} />{subLabels[s.status]}</span></div><div className="well"><h3 className="text-lg font-semibold leading-tight">{s.business.publicTitle || s.business.name || "Untitled draft"}</h3><p className="mt-1 text-sm text-muted-foreground">{s.business.name ? `Private name: ${s.business.name}` : "Not started"}</p><p className="mt-5 flex items-center justify-between border-t pt-3 text-sm text-muted-foreground">Updated {s.updatedAt.slice(0, 10)}<ArrowRight size={16} /></p></div></Link>; })}</div>
+      : <div className="panel"><div className="well grid gap-8 p-8 md:grid-cols-[1.2fr_1fr] md:p-10"><div><h2 className="text-2xl font-semibold tracking-tight">List your business, privately.</h2><p className="mt-2 text-muted-foreground">A guided listing takes about 15 minutes. An advisor reviews it, verifies the numbers with you and prepares the listing. Nothing goes public until you approve it.</p><Link href="/account/sell/new" className="btn btn-brand mt-6">Start your listing <ArrowRight size={17} /></Link></div><ul className="space-y-3 text-sm">{["Your business name is never shown publicly", "Buyers sign an NDA and show funds before learning more", "Live report of every buyer and offer"].map((t) => <li key={t} className="flex gap-2.5"><ShieldCheck size={18} className="shrink-0 text-c-green" />{t}</li>)}</ul></div></div>}
+    {!subs.length && <div className="mt-4"><Empty title="No listings yet" text="Your submitted businesses will appear here." /></div>}</>;
+}

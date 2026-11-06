@@ -5,7 +5,8 @@ import { ndaText, signedNdaPdf } from "./pdf";
 import { addNote, syncBuyer } from "./pipedrive";
 import { notifyAdvisors, sendMail, siteUrl } from "./mail";
 import { ruleFor } from "./rules";
-import { buyerByEmail, buyerById, buyerByToken, saveBuyer, saveFile } from "./store";
+import { allBuyers, buyerByEmail, buyerById, buyerByToken, saveBuyer, saveFile } from "./store";
+import { userByEmail } from "./accounts";
 import type { Buyer, Offer, OfferStatus, Route, Stage } from "./types";
 import { fileIds, getFile } from "./store";
 
@@ -37,6 +38,13 @@ export async function createInquiry(i: { listingSlug: string; name: string; emai
     stage: "inquiry", cimViews: 0, createdAt: now, updatedAt: now, events: [],
   };
   log(b, "inquiry", `Inquiry from ${i.source}`);
+  // Account holders skip the profile step: their saved buyer profile carries over.
+  const u = await userByEmail(email).catch(() => null);
+  if (u) {
+    b.phone ??= u.phone; b.company ??= u.company;
+    const f = u.buyer?.funding ?? ""; const route: Route | undefined = u.buyer?.type === "strategic" ? "company" : /own|investor/i.test(f) ? "own" : /sba|bank|seller/i.test(f) ? "financing" : undefined;
+    if (route && (u.buyer?.about ?? "").trim().length >= 10) { Object.assign(b, { route, why: u.buyer!.about!.trim(), linkedin: u.linkedin, website: u.website }); log(b, "profile", `Profile reused from account. Route: ${route}`); }
+  }
   await safely(() => sendMail(email, `Your next step on ${listing.title}`,
     `Hi ${b.name.split(" ")[0]},\n\nThanks for your inquiry. Sign the NDA and tell us how you plan to buy, and we will open the next step. It works on your phone.\n\n${buyerLink(b)}\n\nWestbound Road`), b);
   await commit(b);
@@ -57,12 +65,25 @@ export async function signNda(token: string, s: { signedName: string; ip: string
   const at = new Date().toISOString();
   const listing = (await findListing(b.listingSlug))!;
   const hash = createHash("sha256").update(`${nda.version}\n${listing.title}\n${ndaText()}\n${s.signedName}\n${b.email}\n${at}`).digest("hex");
-  const bytes = await signedNdaPdf({ name: s.signedName, email: b.email, listing: listing.title, at, ip: s.ip, userAgent: s.userAgent, hash, signature: s.signature });
-  const fileId = randomUUID();
+  const fileId = randomUUID(); const viewedAt = [...b.events].reverse().find((e) => e.type === "nda_view")?.at;
+  const bytes = await signedNdaPdf({ name: s.signedName, email: b.email, listing: listing.title, at, ip: s.ip, userAgent: s.userAgent, hash, signature: s.signature, docId: fileId, verifyUrl: `${siteUrl()}/verify/${fileId}`, viewedAt });
+  const pdfHash = createHash("sha256").update(bytes).digest("hex");
   await saveFile({ id: fileId, kind: "nda", buyerId: b.id, name: `NDA-${b.name}.pdf`, mime: "application/pdf", bytes, createdAt: at });
-  b.nda = { signedName: s.signedName, signedAt: at, ip: s.ip, userAgent: s.userAgent, version: nda.version, fileId, method: s.signature ? "drawn" : "typed", hash };
+  b.nda = { signedName: s.signedName, signedAt: at, ip: s.ip, userAgent: s.userAgent, version: nda.version, fileId, method: s.signature ? "drawn" : "typed", hash, pdfHash };
   b.stage = "capacity";
   log(b, "nda", `NDA signed by ${s.signedName}`);
+  await safely(() => sendMail(b.email, `Your signed NDA for ${listing.title}`, `Hi ${b.name.split(" ")[0]},\n\nYour signed NDA is attached for your records. It includes a signing certificate.\n\nCheck it any time: ${siteUrl()}/verify/${fileId}\nContinue here: ${buyerLink(b)}\n\nWestbound Road`, [{ filename: `Signed NDA - ${listing.title}.pdf`, content: bytes }]), b);
+  const rule = await ruleFor(listing);
+  if ((b.route === "own" || b.route === "letter") && rule.gate !== "after_nda") {
+    const now = new Date().toISOString();
+    const prior = (await allBuyers()).filter((x) => x.id !== b.id && x.email === b.email && x.funds?.status === "verified" && (x.funds.expiresAt ?? "") > now && (x.funds.verifiedUsd ?? 0) >= (rule.floorUsd ?? 0)).sort((x, y) => (y.funds!.verifiedUsd ?? 0) - (x.funds!.verifiedUsd ?? 0))[0];
+    if (prior?.funds) {
+      b.funds = { ...prior.funds, carriedFrom: prior.listingSlug, note: undefined }; b.stage = "review";
+      log(b, "funds_ok", "Proof of funds carried over from an earlier verification"); log(b, "review", "Sent to advisor review");
+      await safely(() => notifyAdvisors(`Review needed: ${b.name}, ${listing.title}`, `${b.name} signed the NDA. Their proof of funds is already verified ($${(prior.funds!.verifiedUsd ?? 0).toLocaleString("en-US")}, valid until ${prior.funds!.expiresAt?.slice(0, 10)}).\n\n${siteUrl()}/admin/buyers/${b.id}`), b);
+      await commit(b, `NDA signed by ${s.signedName}. Verified funds carried over.`); return b;
+    }
+  }
   if ((await ruleFor(listing)).gate === "after_nda") { await openCim(b, "Listing rule: CIM opens after NDA"); return b; }
   await commit(b, `NDA signed by ${s.signedName} on ${at}`);
   return b;
@@ -237,10 +258,10 @@ export async function trackRoom(b: Buyer, sections: Record<string, number>) {
   for (const [k, sec] of Object.entries(sections)) if (/^[a-z]{2,20}$/.test(k) && sec > 0) r.sections[k] = Math.min((r.sections[k] ?? 0) + Math.min(sec, 120), 36000);
   b.room = { ...r, lastAt: new Date().toISOString() }; await saveBuyer(b);
 }
-export async function trackDoc(b: Buyer, name: string) {
+export async function trackDoc(b: Buyer, name: string, label?: string) {
   const r = b.room ?? { sections: {}, docs: {} };
   r.docs[name] = (r.docs[name] ?? 0) + 1; b.room = { ...r, lastAt: new Date().toISOString() };
-  log(b, "cim_view", `Opened ${name}`); b.cimViews += 1; await commit(b);
+  log(b, "cim_view", label ?? `Opened ${name}`); b.cimViews += 1; await commit(b);
 }
 export async function roomDocs(slug: string) {
   const ids = await fileIds(`room:${slug}:`);

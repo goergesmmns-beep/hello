@@ -15,7 +15,7 @@ import { ThemeToggle } from "./theme";
 const groups = [
   ["Desk", [["/admin", "Overview", LayoutDashboard], ["/admin/tasks", "Tasks", CheckSquare], ["/admin/inbox", "Inbox", Inbox]]],
   ["Buyers", [["/admin/pipeline", "Pipeline", Workflow], ["/admin/buyers", "All buyers", Users], ["/admin/funds", "Proof of funds", Landmark], ["/admin/ndas", "NDAs", FileSignature], ["/admin/offers", "Offers", Handshake]]],
-  ["Deals", [["/admin/listings", "Listings", Building2], ["/admin/reports", "Reports", BarChart3], ["/admin/activity", "Activity", Activity]]],
+  ["Deals", [["/admin/listings", "Listings", Building2], ["/admin/submissions", "Seller submissions", Inbox], ["/admin/accounts", "Accounts", Users], ["/admin/reports", "Reports", BarChart3], ["/admin/activity", "Activity", Activity]]],
   ["Settings", [["/admin/integrations", "Connections", Plug]]],
 ] as const;
 const names: Record<string, string> = Object.fromEntries(groups.flatMap(([, i]) => i.map(([h, l]) => [h, l])));
@@ -24,6 +24,7 @@ function crumbs(path: string): [string, string][] {
   const parts = path.split("/").filter(Boolean); if (parts.length <= 1) return [["/admin", "Overview"]];
   const base = `/admin/${parts[1]}`; const out: [string, string][] = [[base, names[base] ?? parts[1]]];
   if (parts[1] === "buyers" && parts[2]) out.push([path, "Buyer record"]);
+  if (parts[1] === "submissions" && parts[2]) out.push([path, "Review"]);
   if (parts[1] === "listings" && parts[2]) out.push([path, parts[2] === "new" ? "New listing" : parts[3] === "report" ? "Seller report" : "Edit listing"]);
   return out;
 }
@@ -61,7 +62,7 @@ function User({ email }: { email: string }) {
       <DropdownMenuItem asChild><Link href="/" target="_blank"><ExternalLink />View public site</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/integrations"><Plug />Connections</Link></DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem id="sign-out" onSelect={signOut}><LogOut />Sign out</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
 }
 
-export function Shell({ review, inbox, funds, tasks, notes, email, open, ready, children }: { review: number; inbox: number; funds: number; tasks: number; notes: Note[]; email: string; open: boolean; ready: [number, number]; children: React.ReactNode }) {
+export function Shell({ review, inbox, funds, tasks, subs = 0, notes, email, open, ready, children }: { subs?: number; review: number; inbox: number; funds: number; tasks: number; notes: Note[]; email: string; open: boolean; ready: [number, number]; children: React.ReactNode }) {
   const path = usePathname(); const c = crumbs(path);
   return (
     <SidebarProvider defaultOpen={open}>

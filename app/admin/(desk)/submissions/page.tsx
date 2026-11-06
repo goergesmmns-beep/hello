@@ -1,0 +1,11 @@
+import Link from "next/link";
+import { Empty, PageTitle } from "@/components/desk/panel";
+import { allSubs, subLabels, type SubStatus } from "@/lib/seller";
+export const dynamic = "force-dynamic";
+const order: SubStatus[] = ["submitted", "review", "changes", "approved", "rejected"];
+const usd = (n?: number) => (n ? `$${Math.round(n).toLocaleString("en-US")}` : "–");
+export default async function Submissions() {
+  const subs = await allSubs(); const drafts = subs.filter((s) => s.status === "draft").length;
+  return <><PageTitle title="Seller submissions" sub={`Businesses owners have submitted for review.${drafts ? ` ${drafts} more ${drafts === 1 ? "is" : "are"} still in draft.` : ""}`} />
+    {subs.some((s) => s.status !== "draft") ? <div className="space-y-5">{order.map((st) => { const g = subs.filter((s) => s.status === st).sort((a, b) => (a.submittedAt ?? "").localeCompare(b.submittedAt ?? "")); return g.length > 0 && <section key={st}><h2 className="mb-2 text-sm font-semibold">{subLabels[st]} <span className="num text-muted-foreground">{g.length}</span></h2><div className="tablebox !m-0 overflow-x-auto"><table className="w-full min-w-[720px] text-sm"><thead className="bg-surface-1 text-left text-[13px] text-muted-foreground"><tr>{["Business", "Owner", "Category", "Latest revenue", "Docs", "Submitted"].map((h) => <th key={h} className="px-4 py-2.5 font-medium">{h}</th>)}</tr></thead><tbody>{g.map((s) => <tr key={s.id} className="border-t"><td className="px-4 py-3"><Link href={`/admin/submissions/${s.id}`} className="font-semibold hover:text-c-orange">{s.business.publicTitle || s.business.name}</Link><span className="block text-xs text-muted-foreground">{s.business.name}</span></td><td className="px-4 py-3">{s.ownerName}<span className="block text-xs text-muted-foreground">{s.ownerEmail}</span></td><td className="px-4 py-3 text-muted-foreground">{s.business.category}</td><td className="num px-4 py-3">{usd(s.financials.at(-1)?.revenue)}</td><td className="num px-4 py-3">{s.docs.length}</td><td className="num px-4 py-3 text-muted-foreground">{s.submittedAt?.slice(0, 10)}</td></tr>)}</tbody></table></div></section>; })}</div> : <Empty title="No submissions yet" text="When an owner submits a business from their account, it appears here for review." />}</>;
+}

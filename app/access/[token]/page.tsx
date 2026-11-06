@@ -7,7 +7,7 @@ import { nda } from "@/content/nda";
 import { publicBuyer } from "@/lib/flow";
 import { getFollowups } from "@/lib/reminders";
 import { ruleFor } from "@/lib/rules";
-import { buyerByToken } from "@/lib/store";
+import { buyerByToken, saveBuyer } from "@/lib/store";
 
 export const metadata: Metadata = { title: "Your private access", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -17,6 +17,8 @@ export default async function Access({ params, searchParams }: { params: Promise
   if (!b) notFound();
   const l = (await findListing(b.listingSlug))!;
   const verified = v === b.verifyCode;
+  // The first time the NDA is shown is recorded, and printed on the signing certificate.
+  if (b.why && !b.nda && !b.events.some((e) => e.type === "nda_view")) { b.events.unshift({ at: new Date().toISOString(), type: "nda_view", detail: "Opened the NDA" }); await saveBuyer(b); }
   const rule = await ruleFor(l);
   const { bookingUrl } = await getFollowups();
   const local = process.env.TEST_MODE === "true" || (!process.env.RESEND_API_KEY && !process.env.VERCEL);
