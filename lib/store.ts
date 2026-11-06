@@ -169,3 +169,25 @@ export async function deleteFile(id: string) {
   const sql = await db();
   await sql`delete from files where id = ${id}`;
 }
+
+/** Writes a buyer exactly as given, keeping its own timestamps. Used by the demo loader. */
+export async function saveBuyerRaw(b: Buyer) {
+  if (useLocal()) { const d = await readLocal(); d.buyers = [b, ...d.buyers.filter((x) => x.id !== b.id)]; return writeLocal(d); }
+  const sql = await db();
+  await sql`insert into buyers (id, token, email, listing, data, updated_at) values (${b.id}, ${b.token}, ${b.email}, ${b.listingSlug}, ${sql.json(b as never)}, ${new Date(b.updatedAt)})
+    on conflict (id) do update set data = excluded.data, updated_at = excluded.updated_at`;
+}
+/** Removes every record the demo loader created. Real buyers are untouched. */
+export async function clearDemo() {
+  if (useLocal()) {
+    const d = await readLocal(); const ids = new Set(d.buyers.filter((b) => b.demo).map((b) => b.id));
+    d.buyers = d.buyers.filter((b) => !b.demo); d.submissions = d.submissions.filter((x) => !x.demo); d.files = d.files.filter((f) => !ids.has(f.buyerId));
+    await writeLocal(d); return ids.size;
+  }
+  const sql = await db();
+  const r = await sql`select id from buyers where data->>'demo' = 'true'`; const ids = r.map((x) => x.id as string);
+  if (ids.length) await sql`delete from files where buyer_id in ${sql(ids)}`;
+  await sql`delete from buyers where data->>'demo' = 'true'`;
+  await sql`delete from submissions where data->>'demo' = 'true'`;
+  return ids.length;
+}

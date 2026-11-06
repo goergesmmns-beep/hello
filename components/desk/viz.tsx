@@ -14,10 +14,10 @@ export function Greeting({ name = "" }: { name?: string }) {
 /** One bar split into coloured segments, with a legend that carries a coloured edge. */
 export function SegBar({ items, unit = "" }: { items: Item[]; unit?: string }) {
   const t = items.reduce((s, x) => s + x.value, 0); const shown = items.filter((x) => x.value > 0);
-  return <div>
+  return <div className="@container">
     <div className="flex h-2.5 gap-1" role="img" aria-label={items.map((x) => `${x.label} ${x.value}`).join(", ")}>{shown.length ? shown.map((x, i) => <i key={x.label} className="block h-full rounded-full transition-[flex-grow] duration-700" style={{ flexGrow: x.value, background: x.color ?? palette[i % 5] }} />) : <i className="block h-full flex-1 rounded-full bg-muted" />}</div>
     <div className="my-5 border-t" />
-    <ul className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">{items.map((x, i) => <li key={x.label} className="legend min-w-0" style={{ ["--c" as string]: x.color ?? palette[i % 5] }}><p className="truncate text-[15px] font-medium">{x.label}</p><p className="num text-[13px] text-muted-foreground">{x.value}{unit} · {pct(x.value, t)}%</p></li>)}</ul>
+    <ul className="grid grid-cols-2 gap-x-4 gap-y-4 @[460px]:grid-cols-3">{items.map((x, i) => <li key={x.label} className="legend min-w-0" style={{ ["--c" as string]: x.color ?? palette[i % 5] }}><p className="truncate text-[15px] font-medium">{x.label}</p><p className="num text-[13px] text-muted-foreground">{x.value}{unit} · {pct(x.value, t)}%</p></li>)}</ul>
   </div>;
 }
 

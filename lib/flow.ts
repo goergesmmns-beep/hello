@@ -12,7 +12,7 @@ import { fileIds, getFile } from "./store";
 const log = (b: Buyer, type: string, detail: string) => b.events.unshift({ at: new Date().toISOString(), type, detail });
 
 async function commit(b: Buyer, note?: string) {
-  try { await syncBuyer(b); if (note) await addNote(b, note); }
+  try { if (!b.demo) { await syncBuyer(b); if (note) await addNote(b, note); } }
   catch (e) { b.pipedrive = { ...b.pipedrive, error: (e as Error).message.slice(0, 200) }; log(b, "crm_error", (e as Error).message.slice(0, 200)); console.error(e); }
   await saveBuyer(b);
 }

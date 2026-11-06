@@ -19,7 +19,9 @@ export type Buyer = {
   capacity?: { fileId?: string; fileName?: string; plan?: string; role?: string; acquisitions?: string; competitor?: string; notes?: string; submittedAt: string };
   pipedrive?: { personId?: number; dealId?: number; files?: string[]; syncedAt?: string; error?: string };
   room?: RoomStats; questions?: Question[];
+  /** Sample record from the demo loader. Never emailed or synced. */
+  demo?: boolean;
   cimViews: number; notes?: { at: string; text: string }[]; archived?: boolean; reminders?: Record<string, string>; remindersOff?: boolean; createdAt: string; updatedAt: string; events: BuyerEvent[];
 };
-export type Submission = { id: string; kind: string; fields: Record<string, string>; createdAt: string; handled?: boolean };
+export type Submission = { id: string; kind: string; fields: Record<string, string>; createdAt: string; handled?: boolean; demo?: boolean };
 export type StoredFile = { id: string; kind: "nda" | "capacity" | "cim" | "room"; buyerId: string; name: string; mime: string; bytes: Uint8Array; createdAt: string };
