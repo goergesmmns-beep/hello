@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { ArrowRight, BadgeCheck, Bookmark, BriefcaseBusiness, FileSignature, Store, UserRound } from "lucide-react";
 import { DealCard } from "@/components/account/deal-card";
 import { Card, Empty } from "@/components/desk/panel";
@@ -9,7 +11,10 @@ import { me, myDeals } from "@/lib/my";
 import { subLabels, subsFor } from "@/lib/seller";
 const budgetMax: Record<string, number> = { "Under $250K": 25e4, "$250K to $1M": 1e6, "$1M to $5M": 5e6, "$5M to $20M": 2e7, "$20M and up": 1e12 };
 export default async function Overview() {
-  const u = await me(); const [deals, list, subs] = await Promise.all([myDeals(u), publicListings(), subsFor(u.id)]);
+  const u = await me();
+  // Sellers who chose Selling land on their listings, not the buyer overview.
+  const m = (await cookies()).get("wb_mode")?.value;
+  if (m === "selling" || (!m && u.roles.includes("seller") && !u.roles.includes("buyer"))) redirect("/account/sell"); const [deals, list, subs] = await Promise.all([myDeals(u), publicListings(), subsFor(u.id)]);
   const verified = deals.filter((d) => d.funds?.status === "verified" && (d.funds.expiresAt ?? "") > new Date().toISOString()).sort((a, b) => (b.funds!.verifiedUsd ?? 0) - (a.funds!.verifiedUsd ?? 0))[0];
   const max = budgetMax[u.buyer?.budget ?? ""] ?? Infinity; const sec = (u.buyer?.sectors ?? []).map((s) => s.toLowerCase());
   const matches = list.filter((l) => l.status !== "pending" && !deals.some((d) => d.listingSlug === l.slug) && (l.askUsd ?? 0) <= max * 1.2 && (!sec.length || sec.some((s) => l.category.toLowerCase().includes(s) || s.includes(l.category.toLowerCase())))).slice(0, 3);
