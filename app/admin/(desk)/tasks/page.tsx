@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
 import Link from "next/link";
 import { TaskCheck } from "@/components/desk/actions";
-import { Card, Empty, PageTitle } from "@/components/desk/shell";
+import { Card, Empty, PageTitle } from "@/components/desk/panel";
 import { allBuyers } from "@/lib/store";
 export const dynamic = "force-dynamic";
 export default async function TasksPage() {

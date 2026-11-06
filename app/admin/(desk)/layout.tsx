@@ -3,13 +3,14 @@ import { redirect } from "next/navigation";
 import { Shell } from "@/components/desk/shell";
 import type { Note } from "@/components/desk/notifications";
 import { isAdmin } from "@/lib/admin";
+import { launchChecks } from "@/lib/launch";
 import { catalog } from "@/lib/catalog";
 import { allBuyers, allSubmissions } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export default async function Desk({ children }: { children: React.ReactNode }) {
   if (!(await isAdmin())) redirect("/admin/login");
-  const [all, s, cat, jar] = await Promise.all([allBuyers(), allSubmissions(), catalog(), cookies()]);
+  const [all, s, cat, jar, checks] = await Promise.all([allBuyers(), allSubmissions(), catalog(), cookies(), launchChecks()]);
   const b = all.filter((x) => !x.archived); const today = new Date().toISOString().slice(0, 10);
   const title = (slug: string) => cat.find((l) => l.slug === slug)?.title ?? slug;
   const notes: Note[] = [
@@ -20,5 +21,5 @@ export default async function Desk({ children }: { children: React.ReactNode }) 
     ...b.flatMap((x) => (x.tasks ?? []).filter((t) => !t.done && t.due && t.due <= today).map((t) => ({ id: `t${t.id}`, kind: "task" as const, title: `Due: ${t.text}`, sub: x.name, at: `${t.due}T00:00:00.000Z`, href: "/admin/tasks" }))),
     ...s.filter((x) => !x.handled).map((x) => ({ id: `i${x.id}`, kind: "inbox" as const, title: `New ${x.kind.toLowerCase()} message`, sub: x.fields.name || x.fields.email || "", at: x.createdAt, href: "/admin/inbox" })),
   ].sort((x, y) => y.at.localeCompare(x.at)).slice(0, 30);
-  return <Shell open={jar.get("sidebar_state")?.value !== "false"} email={process.env.ADVISOR_EMAIL?.split(",")[0] || "advisor@westboundroad.com"} notes={notes} review={b.filter((x) => x.stage === "review").length} inbox={s.filter((x) => !x.handled).length} funds={b.filter((x) => x.funds?.status === "submitted").length} tasks={b.flatMap((x) => x.tasks ?? []).filter((t) => !t.done && t.due && t.due <= today).length}>{children}</Shell>;
+  return <Shell ready={[checks.filter((c) => c[1]).length, checks.length]} open={jar.get("sidebar_state")?.value !== "false"} email={process.env.ADVISOR_EMAIL?.split(",")[0] || "advisor@westboundroad.com"} notes={notes} review={b.filter((x) => x.stage === "review").length} inbox={s.filter((x) => !x.handled).length} funds={b.filter((x) => x.funds?.status === "submitted").length} tasks={b.flatMap((x) => x.tasks ?? []).filter((t) => !t.done && t.due && t.due <= today).length}>{children}</Shell>;
 }

@@ -28,6 +28,15 @@
   --brand-foreground: oklch(0.1450 0 0);
   --brand-ink: oklch(0.5400 0.1400 55);
   --radius: 0.625rem;
+  --surface-1: oklch(0.975 0 0);
+  --surface-2: oklch(1 0 0);
+  --line-2: oklch(0.915 0 0);
+  --hi: rgba(255,255,255,.9);
+  --c-orange: oklch(0.70 0.19 48);
+  --c-blue: oklch(0.66 0.16 245);
+  --c-green: oklch(0.70 0.17 150);
+  --c-purple: oklch(0.66 0.17 295);
+  --c-gray: oklch(0.65 0 0);
   --sidebar: oklch(0.9850 0 0);
   --sidebar-foreground: oklch(0.1450 0 0);
   --sidebar-primary: oklch(0.2050 0 0);
@@ -63,6 +72,15 @@
   --brand: oklch(0.8100 0.1250 68);
   --brand-foreground: oklch(0.1450 0 0);
   --brand-ink: oklch(0.8100 0.1250 68);
+  --surface-1: oklch(0.155 0 0);
+  --surface-2: oklch(0.19 0 0);
+  --line-2: oklch(0.265 0 0);
+  --hi: rgba(255,255,255,.045);
+  --c-orange: oklch(0.72 0.19 48);
+  --c-blue: oklch(0.70 0.15 245);
+  --c-green: oklch(0.74 0.18 150);
+  --c-purple: oklch(0.70 0.16 295);
+  --c-gray: oklch(0.55 0 0);
   --sidebar: oklch(0.1100 0 0);
   --sidebar-foreground: oklch(0.9850 0 0);
   --sidebar-primary: oklch(0.8100 0.1250 68);
@@ -100,6 +118,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-line-2: var(--line-2);
+  --color-c-orange: var(--c-orange);
+  --color-c-blue: var(--c-blue);
+  --color-c-green: var(--c-green);
+  --color-c-purple: var(--c-purple);
+  --color-c-gray: var(--c-gray);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-ink: var(--brand-ink);
@@ -212,4 +238,45 @@
 @media (prefers-reduced-motion: reduce) {
   .gborder::before, .aurora i, .mesh::before, .flow, .word-in, .reveal { animation: none !important; }
   .plate { transition: none; }
+}
+
+/* ---- Panel system: an outer shell with a header, and an inset well that holds the content. ---- */
+@layer components {
+  .panel { position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: 20px; background: var(--surface-1); border: 1px solid var(--border); padding: 5px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 32px -22px rgba(0,0,0,.35); }
+  .panel-head { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 6px 12px 8px 14px; }
+  .panel-head h2, .panel-head h3 { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .panel-head svg { flex-shrink: 0; }
+  .well { position: relative; flex: 1; min-width: 0; border-radius: 15px; background: var(--surface-2); border: 1px solid var(--line-2); box-shadow: inset 0 1px 0 var(--hi); padding: 18px; }
+  .well-flush { padding: 0; overflow: hidden; }
+  .dark .panel { box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -26px rgba(0,0,0,.9); }
+  .hatch { background-image: repeating-linear-gradient(135deg, color-mix(in oklch, currentColor 30%, transparent) 0 1px, transparent 1px 7px); }
+  .track { position: relative; height: 34px; border-radius: 10px; overflow: hidden; color: var(--c, var(--c-orange)); background-color: color-mix(in oklch, var(--c, var(--c-orange)) 9%, transparent); background-image: repeating-linear-gradient(135deg, color-mix(in oklch, var(--c, var(--c-orange)) 32%, transparent) 0 1px, transparent 1px 7px); }
+  .track > i { position: absolute; inset: 0 auto 0 0; border-radius: 10px; background: var(--c, var(--c-orange)); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(0,0,0,.12); transition: width .8s cubic-bezier(.2,.7,.2,1); }
+  .track > span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; font-family: var(--font-geist-mono), monospace; color: var(--c, var(--c-orange)); }
+  .seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 11px; background: var(--surface-1); border: 1px solid var(--border); }
+  .seg > button, .seg > a { min-height: 30px; padding: 0 11px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; transition: color .15s, background .15s; }
+  .seg > [aria-pressed="true"], .seg > [aria-current="page"] { background: var(--surface-2); color: var(--foreground); box-shadow: inset 0 0 0 1px var(--line-2), 0 1px 2px rgba(0,0,0,.18); }
+  .tbtn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 13px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-1); font-size: 14px; font-weight: 500; color: var(--foreground); white-space: nowrap; transition: border-color .15s, background .15s; }
+  .tbtn:hover { border-color: color-mix(in oklch, var(--foreground) 30%, transparent); }
+  .tbtn .count { min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; display: grid; place-items: center; font-size: 11px; font-weight: 600; background: color-mix(in oklch, var(--c-orange) 22%, transparent); color: var(--c-orange); border: 1px solid color-mix(in oklch, var(--c-orange) 45%, transparent); }
+  .dchip { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); font-size: 14px; color: var(--muted-foreground); cursor: pointer; white-space: nowrap; transition: all .15s; }
+  .dchip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--c-orange)); }
+  .dchip[aria-pressed="true"] { color: var(--foreground); border-color: var(--c, var(--c-orange)); background: color-mix(in oklch, var(--c, var(--c-orange)) 12%, var(--surface-1)); }
+  .legend { border-left: 3px solid var(--c, var(--c-orange)); padding-left: 10px; }
+  .kbd { display: inline-grid; place-items: center; min-width: 22px; height: 20px; padding: 0 5px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); font-family: var(--font-geist-mono), monospace; }
+  .badge-new { border-radius: 6px; padding: 1px 7px; font-size: 11px; font-weight: 600; color: var(--c-green); background: color-mix(in oklch, var(--c-green) 14%, transparent); border: 1px solid color-mix(in oklch, var(--c-green) 35%, transparent); }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-green); box-shadow: 0 0 0 0 color-mix(in oklch, var(--c-green) 60%, transparent); animation: livepulse 2s infinite; }
+  .grad-av { background: linear-gradient(135deg, oklch(0.80 0.15 70), oklch(0.66 0.21 35)); color: #1a0d00; }
+  .grad-bar { background: linear-gradient(90deg, var(--c-orange), oklch(0.68 0.2 330), var(--c-purple)); }
+}
+@keyframes livepulse { 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } .track > i { transition: none; } }
+@layer components {
+  /* A single element that reads as a panel holding a well: inset surface plus an outer ring. */
+  .tablebox { border-radius: 15px; background: var(--surface-2); border: 1px solid var(--line-2); margin: 6px; box-shadow: inset 0 1px 0 var(--hi), 0 0 0 5px var(--surface-1), 0 0 0 6px var(--border), 0 18px 36px -26px rgba(0,0,0,.6); }
+}
+@layer components {
+  /* Public-site card: an inset surface wrapped by a thin outer shell, the same look as dashboard panels. */
+  .ringcard { position: relative; border-radius: 18px; background-color: var(--surface-2); border: 1px solid var(--line-2); box-shadow: inset 0 1px 0 var(--hi), 0 0 0 4px var(--surface-1), 0 0 0 5px var(--border), 0 20px 40px -30px rgba(0,0,0,.45); }
+  .dark .ringcard { box-shadow: inset 0 1px 0 var(--hi), 0 0 0 4px var(--surface-1), 0 0 0 5px var(--border), 0 24px 48px -30px rgba(0,0,0,.9); }
 }

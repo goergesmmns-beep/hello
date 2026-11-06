@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Decide } from "@/components/desk/actions";
-import { PageTitle } from "@/components/desk/shell";
+import { PageTitle } from "@/components/desk/panel";
 import { catalog, isOpen } from "@/lib/catalog";
 import { ago, routeLabels } from "@/lib/analytics";
 import { allBuyers } from "@/lib/store";

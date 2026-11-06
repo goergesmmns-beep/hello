@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingEditor } from "@/components/desk/listing-editor";
-import { PageTitle } from "@/components/desk/shell";
+import { PageTitle } from "@/components/desk/panel";
 import { findListing } from "@/lib/catalog";
 import { ruleFor } from "@/lib/rules";
 import { fileIds } from "@/lib/store";

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { RuleForm } from "@/components/desk/listing-rules";
-import { Card, PageTitle } from "@/components/desk/shell";
+import { Card, PageTitle } from "@/components/desk/panel";
 import { statusLabel } from "@/content/listings";
 import { analyze } from "@/lib/analytics";
 import { catalog } from "@/lib/catalog";

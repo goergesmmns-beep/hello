@@ -25,7 +25,7 @@ function Bars({ rows }: { rows: { period: string; revenue: number; sde: number }
 function Section({ id, n, title, children }: { id: string; n: string; title: string; children: React.ReactNode }) {
   return <section id={id} data-room={id} className="scroll-mt-28 border-t py-10 first:border-0 first:pt-0 lg:scroll-mt-8"><p className="num mb-2 text-xs text-brand-ink">{n}</p><h2 className="mb-5 text-2xl font-semibold tracking-tight md:text-[28px]">{title}</h2>{children}</section>;
 }
-const Tile = ({ k, v, sub }: { k: string; v: string; sub?: string }) => <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{k}</p><p className="num mt-1.5 text-2xl font-medium">{v}</p>{sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}</div>;
+const Tile = ({ k, v, sub }: { k: string; v: string; sub?: string }) => <div className="ringcard p-4"><p className="text-sm text-muted-foreground">{k}</p><p className="num mt-1.5 text-2xl font-medium">{v}</p>{sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}</div>;
 
 export default async function DealRoom({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ v?: string }> }) {
   const { token } = await params; const { v } = await searchParams;
@@ -68,7 +68,7 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
           </Section>
           {fin.length > 0 && <Section id="financials" n={at("financials")} title="Financial performance">
             <div className="grid gap-3 sm:grid-cols-3"><Tile k={`Revenue, ${last.period}`} v={short(last.revenue)} sub={growth !== null ? `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}% since ${first.period}` : undefined} /><Tile k={`SDE, ${last.period}`} v={short(last.sde)} /><Tile k="Margin" v={last.revenue ? `${((last.sde / last.revenue) * 100).toFixed(1)}%` : "n/a"} /></div>
-            {fin.length > 1 && <div className="mt-6 rounded-xl border p-5"><Bars rows={fin} /></div>}
+            {fin.length > 1 && <div className="mt-6 ringcard p-5"><Bars rows={fin} /></div>}
             <div className="mt-6 overflow-x-auto"><table className="w-full min-w-[420px] text-sm"><thead className="text-left text-muted-foreground"><tr><th className="pb-2 font-medium">Period</th><th className="pb-2 text-right font-medium">Revenue</th><th className="pb-2 text-right font-medium">SDE</th><th className="pb-2 text-right font-medium">Margin</th></tr></thead><tbody>{fin.map((x) => <tr key={x.period} className="border-t"><td className="py-2.5">{x.period}</td><td className="num py-2.5 text-right">{money(x.revenue)}</td><td className="num py-2.5 text-right">{money(x.sde)}</td><td className="num py-2.5 text-right">{x.revenue ? `${((x.sde / x.revenue) * 100).toFixed(1)}%` : ""}</td></tr>)}</tbody></table></div>
             <p className="mt-3 text-xs text-muted-foreground">Figures are seller-provided and unaudited. Full statements are in the documents section and the CIM.</p>
           </Section>}
@@ -84,15 +84,15 @@ export default async function DealRoom({ params, searchParams }: { params: Promi
             <DocIndex docs={[{ id: "cim", name: "Confidential Information Memorandum", folder: "Overview" }, ...docs].map((d) => ({ id: d.id, name: d.name, folder: d.folder, href: doc(d.id), viewed: !!b.room?.docs[d.id === "cim" ? "CIM" : d.name] }))} />
           </Section>
           <Section id="questions" n={at("questions")} title="Questions and answers">
-            {(r.faq ?? []).length > 0 && <div className="mb-6 divide-y rounded-xl border">{r.faq!.map((f) => <details key={f.q} className="group p-4"><summary className="cursor-pointer list-none font-medium marker:hidden">{f.q}</summary><p className="mt-2 text-muted-foreground">{f.a}</p></details>)}</div>}
+            {(r.faq ?? []).length > 0 && <div className="mb-6 divide-y tablebox !m-0">{r.faq!.map((f) => <details key={f.q} className="group p-4"><summary className="cursor-pointer list-none font-medium marker:hidden">{f.q}</summary><p className="mt-2 text-muted-foreground">{f.a}</p></details>)}</div>}
             <AskForm token={token} v={v!} initial={(b.questions ?? []).map(({ id, at, q, a }) => ({ id, at, q, a }))} />
           </Section>
           <Section id="next" n={at("next")} title="Next steps">
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border p-5"><h3 className="font-semibold">Talk to an advisor</h3><p className="mt-1 text-sm text-muted-foreground">Walk through the numbers, the seller and deal structure.</p>{bookingUrl ? <a id="room-book" href={bookingUrl} target="_blank" rel="noreferrer" className="btn btn-primary mt-4 w-full"><CalendarDays size={17} /> Book a call</a> : <Link href={`/access/${token}?v=${encodeURIComponent(v!)}`} className="btn btn-primary mt-4 w-full"><CalendarDays size={17} /> Request a call</Link>}</div>
-              <div className="rounded-xl border p-5"><h3 className="font-semibold">Ready to move?</h3><p className="mt-1 text-sm text-muted-foreground">Share a non-binding indication of interest. It goes straight to the advisor.</p></div>
+              <div className="ringcard p-5"><h3 className="font-semibold">Talk to an advisor</h3><p className="mt-1 text-sm text-muted-foreground">Walk through the numbers, the seller and deal structure.</p>{bookingUrl ? <a id="room-book" href={bookingUrl} target="_blank" rel="noreferrer" className="btn btn-primary mt-4 w-full"><CalendarDays size={17} /> Book a call</a> : <Link href={`/access/${token}?v=${encodeURIComponent(v!)}`} className="btn btn-primary mt-4 w-full"><CalendarDays size={17} /> Request a call</Link>}</div>
+              <div className="ringcard p-5"><h3 className="font-semibold">Ready to move?</h3><p className="mt-1 text-sm text-muted-foreground">Share a non-binding indication of interest. It goes straight to the advisor.</p></div>
             </div>
-            <div className="mt-3 rounded-xl border p-5"><h3 className="mb-4 font-semibold">Indication of interest</h3><InterestForm token={token} v={v!} ask={l.askUsd} /></div>
+            <div className="mt-3 ringcard p-5"><h3 className="mb-4 font-semibold">Indication of interest</h3><InterestForm token={token} v={v!} ask={l.askUsd} /></div>
           </Section>
         </main>
       </div>

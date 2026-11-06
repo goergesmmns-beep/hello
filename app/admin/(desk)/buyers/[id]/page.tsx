@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Check, ExternalLink, FileText, Minus } from "lucide-react";
 import { AnswerForm, SyncButton, Decide, FundsReview, NoteForm, OfferForm, OfferStatusSelect, TaskCheck, TaskForm } from "@/components/desk/actions";
-import { Card, StagePill } from "@/components/desk/shell";
+import { Card, StagePill } from "@/components/desk/panel";
 import { money } from "@/content/listings";
 import { findListing } from "@/lib/catalog";
 import { isAdmin } from "@/lib/admin";

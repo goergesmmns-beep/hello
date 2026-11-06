@@ -1,5 +1,5 @@
 import { BuyersTable } from "@/components/desk/buyers-table";
-import { PageTitle } from "@/components/desk/shell";
+import { PageTitle } from "@/components/desk/panel";
 import { catalog } from "@/lib/catalog";
 import { ago, readiness, routeLabels } from "@/lib/analytics";
 import { allBuyers } from "@/lib/store";

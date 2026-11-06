@@ -3,7 +3,7 @@ import { isAdmin } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/desk/actions";
 import { Funnel } from "@/components/desk/charts";
-import { Card, PageTitle } from "@/components/desk/shell";
+import { Card, PageTitle } from "@/components/desk/panel";
 import { money } from "@/content/listings";
 import { findListing } from "@/lib/catalog";
 import { allBuyers } from "@/lib/store";

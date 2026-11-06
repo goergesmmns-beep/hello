@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
-import { Card, Empty, PageTitle } from "@/components/desk/shell";
+import { Card, Empty, PageTitle } from "@/components/desk/panel";
 import { analyze, routeLabels } from "@/lib/analytics";
 import { catalog } from "@/lib/catalog";
 import { allBuyers, allSubmissions } from "@/lib/store";

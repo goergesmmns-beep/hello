@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
 import Link from "next/link";
-import { Empty, PageTitle } from "@/components/desk/shell";
+import { Empty, PageTitle } from "@/components/desk/panel";
 import { catalog } from "@/lib/catalog";
 import { allBuyers } from "@/lib/store";
 export const dynamic = "force-dynamic";
