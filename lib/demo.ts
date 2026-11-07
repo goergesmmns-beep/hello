@@ -94,6 +94,8 @@ export async function seedDemo() {
       step(30); const cash = Math.round((amt * (0.7 + R() * 0.2)) / 5000) * 5000;
       const o: Offer = { id: randomUUID(), at: iso(t), amountUsd: amt, cashUsd: cash, sellerNoteUsd: amt - cash - earn, ...(earn ? { earnoutUsd: earn } : {}), status, notes: R() < .5 ? "Close in 60 days. SBA pre-qualified." : "Seller to stay on for 90 days." };
       b.offers = [o]; add("offer", `Offer logged: $${amt.toLocaleString("en-US")}, ${status}`);
+      // Some deals move on past the buyer's own steps, into the advisor's LOI and diligence columns.
+      if (!slot && stage === "call" && status !== "Declined") { const x = R(); if (x < .35) { step(40); b.board = "loi"; add("board", "Moved to LOI received by advisor"); } else if (x < .5) { step(60); b.board = "diligence"; add("board", "Moved to Due diligence by advisor"); } else if (x < .56) { step(90); b.board = "closed"; o.status = "Accepted"; add("board", "Moved to Closed by advisor"); } }
     }
     if (["review", "call", "cim"].includes(stage) && R() < .45) { const due = new Date(now + (Math.floor(R() * 9) - 3) * day).toISOString().slice(0, 10); b.tasks = [{ id: randomUUID(), text: stage === "call" ? `Call ${name.split(" ")[0]} about LOI terms` : stage === "review" ? `Check ${name.split(" ")[0]}'s funds and release` : `Follow up with ${name.split(" ")[0]} on the CIM`, due, at: iso(t) }]; }
     if (R() < .25 && stage !== "inquiry") b.notes = [{ at: iso(t), text: route === "company" ? "Strong strategic fit. Already serves the same customer base." : "Responsive. Asked good questions on margins." }];

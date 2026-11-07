@@ -21,6 +21,8 @@ export type Buyer = {
   room?: RoomStats; questions?: Question[];
   /** Sample record from the demo loader. Never emailed or synced. */
   demo?: boolean;
+  /** Custom pipeline column the advisor moved this buyer to, and its place in that column. */
+  board?: string; rank?: number;
   cimViews: number; notes?: { at: string; text: string }[]; archived?: boolean; reminders?: Record<string, string>; remindersOff?: boolean; createdAt: string; updatedAt: string; events: BuyerEvent[];
 };
 export type Submission = { id: string; kind: string; fields: Record<string, string>; createdAt: string; handled?: boolean; demo?: boolean };
