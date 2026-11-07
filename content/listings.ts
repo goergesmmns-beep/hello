@@ -30,6 +30,8 @@ export type Listing = {
   /** Annual or TTM figures in USD, used for multiples on cards. Leave empty for partial years or other currencies. */
   revenueUsd?: number; earningsUsd?: number;
   room?: Room;
+  /** Sample listing from the demo loader. */
+  demo?: boolean;
 };
 
 export const listings: Listing[] = [

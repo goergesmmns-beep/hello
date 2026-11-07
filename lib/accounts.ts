@@ -10,6 +10,8 @@ export type User = {
   buyer?: BuyerProfile; saved: string[]; onboarded?: boolean;
   /** Which portal the account opens to. Buyers and sellers get separate dashboards. */
   primary?: "buyer" | "seller"; searches?: SavedSearch[]; hidden?: string[];
+  /** Sample account from the demo loader. */
+  demo?: boolean;
 };
 export type SavedSearch = { id: string; name: string; q?: string; cat?: string; price?: string; sort?: string; alerts: boolean; at: string; sent?: string[] };
 /** The portal an account lands in. */

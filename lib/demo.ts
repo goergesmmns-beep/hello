@@ -1,7 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { nda } from "@/content/nda";
-import { catalog } from "./catalog";
+import { catalog, saveListing } from "./catalog";
+import { accounts, clearWorld, demoListings, demoWeights, seedWorld } from "./demo-world";
 import { ndaText, signedNdaPdf } from "./pdf";
 import { clearDemo, saveBuyerRaw, saveFile, saveSubmission } from "./store";
 import type { Buyer, BuyerEvent, Offer, OfferStatus, Route, Stage } from "./types";
@@ -30,22 +31,29 @@ async function bankPdf(name: string, amount: number, date: string) {
 
 /** Loads a realistic, clearly flagged sample dataset. Running it again replaces the previous sample. */
 export async function seedDemo() {
-  await clearDemo();
+  await clearDemo(); await clearWorld();
+  for (const l of demoListings()) await saveListing(l);
   const R = rng(20261106); const pick = <T,>(w: readonly (readonly [T, number])[]) => { const t = w.reduce((s, x) => s + x[1], 0); let v = R() * t; for (const [k, n] of w) { if ((v -= n) < 0) return k; } return w[0][0]; };
-  const listings = (await catalog()).filter((l) => weights[l.slug]);
+  const W = { ...weights, ...demoWeights }; const listings = (await catalog()).filter((l) => W[l.slug]);
+  // Signed-in demo buyers come first, each with a fixed spread of deals.
+  const slots = accounts.flatMap((a) => (a.deals ?? []).map(([slug, st]) => ({ a, slug, st: st as Stage }))).filter((x) => listings.some((l) => l.slug === x.slug));
+  const byEmail = new Map<string, string[]>();
   const now = Date.now(); const day = 864e5; const iso = (t: number) => new Date(Math.min(t, now - 60e3)).toISOString();
   let count = 0; const used = new Set<string>();
-  for (let i = 0; i < 46; i++) {
-    const l = pick(listings.map((x) => [x, weights[x.slug]] as const));
-    let name = ""; do { name = `${first[Math.floor(R() * first.length)]} ${last[Math.floor(R() * last.length)]}`; } while (used.has(name)); used.add(name);
+  for (const a of accounts) used.add(a.name);
+  for (let i = 0; i < slots.length + 84; i++) {
+    const slot = slots[i];
+    const l = slot ? listings.find((x) => x.slug === slot.slug)! : pick(listings.map((x) => [x, W[x.slug]] as const));
+    let name = slot?.a.name ?? ""; if (!slot) { do { name = `${first[Math.floor(R() * first.length)]} ${last[Math.floor(R() * last.length)]}`; } while (used.has(name)); used.add(name); }
     const [fn, ln] = name.toLowerCase().split(" ");
-    const firm = R() < .45 ? firms[Math.floor(R() * firms.length)] : undefined;
-    const email = `${fn}.${ln}@${firm ? firm.toLowerCase().replace(/[^a-z]/g, "") : "mail"}.example`;
-    let stage = pick(stagesW); if (l.status === "pending" && (stage === "inquiry" || stage === "nda")) stage = "cim";
+    const firm = slot ? slot.a.company : R() < .45 ? firms[Math.floor(R() * firms.length)] : undefined;
+    const email = slot ? slot.a.email : `${fn}.${ln}@${firm ? firm.toLowerCase().replace(/[^a-z]/g, "") : "mail"}.example`;
+    byEmail.set(email, [...(byEmail.get(email) ?? []), l.slug]);
+    let stage = slot?.st ?? pick(stagesW); if (l.status === "pending" && (stage === "inquiry" || stage === "nda")) stage = "cim";
     // Buyers waiting on an advisor are recent, as they would be on a well-run desk.
     const age = stage === "review" ? R() * 2.5 + 0.2 : stage === "capacity" || stage === "inquiry" ? R() * 12 + 0.3 : Math.pow(R(), 1.6) * 88 + .2; const created = now - age * day;
-    const route: Route = l.idealBuyer === "strategic" && R() < .6 ? "company" : pick(routesW);
-    if (stage === "warm" && route === "own" && R() < .5) stage = "cim";
+    const route: Route = slot ? (slot.a.buyer?.type === "strategic" ? "company" : slot.a.buyer?.funding === "SBA loan" ? "financing" : "own") : l.idealBuyer === "strategic" && R() < .6 ? "company" : pick(routesW);
+    if (!slot && stage === "warm" && route === "own" && R() < .5) stage = "cim";
     const ev: BuyerEvent[] = []; let t = created; const step = (h: number) => (t = Math.min(t + h * 36e5 * (0.5 + R()), now - 60e3));
     const add = (type: string, detail: string) => ev.unshift({ at: iso(t), type, detail });
     const src = pick(sources);
@@ -80,10 +88,11 @@ export async function seedDemo() {
       if (R() < .45) { const [q, a] = questions[Math.floor(R() * questions.length)]; step(6); b.questions = [{ id: randomUUID(), at: iso(t), q, ...(a && R() < .7 ? { a, answeredAt: iso(t + 5 * 36e5) } : {}) }]; add("question", "Asked a question in the deal room"); }
     }
     if (stage === "call") { step(12); add("call", "Buyer asked for a call"); }
-    if ((stage === "call" && R() < .75) || (stage === "cim" && R() < .15)) {
-      const base = l.askUsd ?? 900000; const amt = Math.round((base * (0.78 + R() * 0.2)) / 5000) * 5000; const status: OfferStatus = ([["Submitted", 4], ["Countered", 3], ["Accepted", 1], ["Declined", 1]] as const).map(([s]) => s)[Math.floor(R() * 4)] as OfferStatus;
+    if ((stage === "call" && (slot || R() < .75)) || (stage === "cim" && R() < (l.status === "offers" ? .5 : .15))) {
+      const base = l.askUsd ?? 900000; const amt = Math.round((base * (0.78 + R() * 0.2)) / 5000) * 5000; const status: OfferStatus = (["Submitted", "Submitted", "Countered", "Submitted", "Declined"] as const)[Math.floor(R() * 5)];
+      const earn = R() < .3 ? Math.round((amt * 0.1) / 5000) * 5000 : 0;
       step(30); const cash = Math.round((amt * (0.7 + R() * 0.2)) / 5000) * 5000;
-      const o: Offer = { id: randomUUID(), at: iso(t), amountUsd: amt, cashUsd: cash, sellerNoteUsd: amt - cash, status, notes: R() < .5 ? "Close in 60 days. SBA pre-qualified." : "Seller to stay on for 90 days." };
+      const o: Offer = { id: randomUUID(), at: iso(t), amountUsd: amt, cashUsd: cash, sellerNoteUsd: amt - cash - earn, ...(earn ? { earnoutUsd: earn } : {}), status, notes: R() < .5 ? "Close in 60 days. SBA pre-qualified." : "Seller to stay on for 90 days." };
       b.offers = [o]; add("offer", `Offer logged: $${amt.toLocaleString("en-US")}, ${status}`);
     }
     if (["review", "call", "cim"].includes(stage) && R() < .45) { const due = new Date(now + (Math.floor(R() * 9) - 3) * day).toISOString().slice(0, 10); b.tasks = [{ id: randomUUID(), text: stage === "call" ? `Call ${name.split(" ")[0]} about LOI terms` : stage === "review" ? `Check ${name.split(" ")[0]}'s funds and release` : `Follow up with ${name.split(" ")[0]} on the CIM`, due, at: iso(t) }]; }
@@ -100,5 +109,6 @@ export async function seedDemo() {
     ["Newsletter", { name: "Arun Mehta", email: "arun@mail.example" }, 12, true],
   ];
   for (const [kind, fields, ago, handled] of subs) await saveSubmission({ id: randomUUID(), kind, fields, createdAt: new Date(now - ago * day + 3 * 36e5).toISOString(), handled, demo: true });
-  return { buyers: count, inbox: subs.length };
+  const world = await seedWorld(R, byEmail);
+  return { buyers: count, inbox: subs.length, ...world, listings: demoListings().length };
 }

@@ -18,7 +18,7 @@ export const unreadFor = (s: SellerListing) => { const lastMine = [...s.messages
 /** The business the seller is looking at, everything about it, and the switcher list. */
 export async function sellerCtx(u: User) {
   const subs = await subsFor(u.id); const id = (await cookies()).get("wb_listing")?.value;
-  const cur = subs.find((s) => s.id === id) ?? subs[0];
+  const cur = subs.find((s) => s.id === id) ?? subs.find((s) => s.listingSlug) ?? subs[0];
   const listing = cur?.listingSlug ? await findListing(cur.listingSlug) : undefined; const live = !!listing && liveStatus.includes(listing.status);
   const buyers = listing ? (await allBuyers()).filter((b) => b.listingSlug === listing.slug && !b.archived).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) : [];
   const views = listing ? await viewsFor(listing.slug) : null;

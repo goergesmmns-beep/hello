@@ -16,6 +16,7 @@ export type SellerListing = {
   messages: { id: string; at: string; from: "advisor" | "seller"; name: string; text: string }[];
   history: { at: string; status: SubStatus; note?: string }[];
   listingSlug?: string;
+  demo?: boolean;
 };
 export const checks = [["owner", "Ownership confirmed on a call"], ["financials", "Financials reviewed against statements"], ["traffic", "Revenue sources verified in the accounts"], ["agreement", "Listing agreement signed"], ["valuation", "Valuation and asking price agreed"]] as const;
 
