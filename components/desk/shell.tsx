@@ -71,6 +71,7 @@ export function Shell({ review, inbox, funds, tasks, subs = 0, notes, email, ope
         <SidebarContent className="gap-0 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <SidebarGroup className="pb-1 pt-2"><SidebarMenu className="gap-0.5"><NavLink h="/admin" l="Overview" I={LayoutDashboard} /><NavLink h="/admin/tasks" l="Tasks" I={CheckSquare} n={tasks} /><NavLink h="/admin/inbox" l="Inbox" I={Inbox} n={inbox} /></SidebarMenu></SidebarGroup>
           <Group label="Buyers"><NavLink h="/admin/buyers" l="All buyers" I={Users} /><Tree items={[{ h: "/admin/pipeline", l: "Pipeline", I: Workflow, n: review }, { h: "/admin/funds", l: "Proof of funds", I: Landmark, n: funds }, { h: "/admin/ndas", l: "NDAs", I: FileSignature }, { h: "/admin/offers", l: "Offers", I: Handshake }]} /></Group>
+          <Group label="Sellers"><NavLink h="/admin/submissions" l="Seller listings" I={Inbox} n={subs} /><NavLink h="/admin/accounts" l="Accounts" I={Users} /></Group>
           <Group label="Deals"><NavLink h="/admin/listings" l="Listings" I={Building2} tileBg="bg-[oklch(0.62_0.17_250)]"/><NavLink h="/admin/reports" l="Reports" I={BarChart3} tileBg="bg-[oklch(0.68_0.19_48)]" /><NavLink h="/admin/activity" l="Activity" I={Activity} tileBg="bg-[oklch(0.62_0.16_150)]" /><NavLink h="/admin/integrations" l="Connections" I={Plug} tileBg="bg-[oklch(0.58_0.17_295)]" dot={ready[0] < ready[1]} /></Group>
         </SidebarContent>
         <SidebarFooter className="gap-1 px-2 pb-3">
